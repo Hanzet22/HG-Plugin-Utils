@@ -32,14 +32,14 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
         })
 
         container.addView(TextView(context).apply {
-            text = "Six animated themes for the floating launcher and HG PG panel. Each one has distinct colors and moving effects; this does not recolor Discord's entire interface."
+            text = "Six built-in animated themes. HG PG also recolors supported Aliucord/Discord app resources directly; no separate theme plugin or JSON import is needed. Some hard-coded elements may remain unchanged."
             textSize = 14f
             setTextColor(activeTheme.muted)
             setPadding(0, (10 * density).toInt(), 0, (16 * density).toInt())
         })
 
         val current = TextView(context).apply {
-            text = "Current animated theme: " + activeTheme.name
+            text = "Current native theme: " + activeTheme.name
             textSize = 16f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             setTextColor(activeTheme.text)
@@ -71,11 +71,13 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
                 setOnClickListener {
                     activeId = theme.id
                     pluginSettings.setString("theme_profile", theme.id)
-                    current.text = "Current animated theme: " + theme.name
+                    HGPGGlobalThemeEngine.apply(theme)
+                    current.text = "Current native theme: " + theme.name
                     current.setTextColor(theme.text)
                     container.background = HGPGAnimatedDrawable(theme, cornerScale = 0.04f)
                     HGPGOverlay.refreshTheme(pluginSettings)
                     refreshButtons()
+                    HGPGGlobalThemeEngine.refreshActivity(context)
                     animate().scaleX(0.97f).scaleY(0.97f).setDuration(70).withEndAction {
                         animate().scaleX(1f).scaleY(1f).setDuration(120).start()
                     }.start()

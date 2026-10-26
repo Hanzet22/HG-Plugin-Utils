@@ -1,9 +1,14 @@
-version = "0.4.0"
+version = "0.5.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.5.0
+        * Integrated a built-in app-wide color theme engine into HG PG; no separate Themer plugin or external theme JSON is required.
+        * Theme selection now updates supported Aliucord/Discord resource colors, selected drawable tints, and theme attributes.
+        * Preserved the six animated palette systems for the HG PG launcher and panel.
+
         # 0.4.0
         * Added six custom animated themes: Deep Sea Blue, Garuda Indonesia, Light Emitting Orange, Gran Turismo Sport, Gran Turismo Old, and CRT PS2.
         * Added moving theme backdrops, palette-aware panel cards, staggered tile entrances, and animated launcher theme transitions.

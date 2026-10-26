@@ -15,6 +15,12 @@ class HGPG : Plugin() {
         settingsTab = com.aliucord.entities.Plugin.SettingsTab(HGPGSettingsPage::class.java)
             .withArgs(settings)
 
+        try {
+            HGPGGlobalThemeEngine.start(context, settings, patcher)
+        } catch (error: Throwable) {
+            android.util.Log.e("HGPG", "Built-in global theme engine could not start", error)
+        }
+
         // Reattach whenever an Aliucord activity becomes active. Tab navigation can
         // recreate or switch activities after the original onCreate hook has fired.
         val app = context.applicationContext as? Application ?: return
@@ -44,5 +50,6 @@ class HGPG : Plugin() {
         activityCallbacks = null
         HGPGOverlay.dismiss()
         patcher.unpatchAll()
+        HGPGGlobalThemeEngine.stop()
     }
 }

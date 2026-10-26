@@ -16,8 +16,7 @@ import android.widget.TextView
 import com.aliucord.Utils
 import com.aliucord.api.PatcherAPI
 import com.aliucord.api.SettingsAPI
-import com.aliucord.patcher.Hook
-import com.aliucord.patcher.PreHook
+import com.aliucord.patcher.*
 import com.discord.utilities.color.ColorCompat
 import com.google.android.material.textfield.TextInputLayout
 import com.lytefast.flexinput.R
@@ -109,10 +108,13 @@ internal object HGPGGlobalThemeEngine {
         // Palette mappings for the common Discord/Aliucord resource names.
         putColors(accentNames, theme.accent)
         putAttrs(accentAttrs, theme.accent)
+        accentNames.forEach { putAttr(it, theme.accent) }
         putColors(backgroundNames, theme.background)
         putAttrs(backgroundAttrs, theme.background)
+        backgroundNames.forEach { putAttr(it, theme.background) }
         putColors(secondaryNames, theme.surface)
         putAttrs(secondaryAttrs, theme.surface)
+        secondaryNames.forEach { putAttr(it, theme.surface) }
 
         putColor("statusbar", theme.background)
         putColor("input_background", theme.surfaceRaised)

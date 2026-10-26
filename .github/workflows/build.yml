@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    name: Build plugin and global theme pack
+    name: Build plugin
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -39,17 +39,3 @@ jobs:
           if-no-files-found: error
           path: plugins/**/build/outputs/*.zip
           retention-days: 14
-
-      - name: Package global Aliucord themes
-        run: |
-          mkdir -p dist
-          zip -j dist/hg-pg-global-themes.zip global-themes/*.json
-          unzip -t dist/hg-pg-global-themes.zip
-
-      - name: Upload global theme pack
-        uses: actions/upload-artifact@v7
-        with:
-          name: hg-pg-global-themes
-          if-no-files-found: error
-          path: dist/hg-pg-global-themes.zip
-          retention-days: 30

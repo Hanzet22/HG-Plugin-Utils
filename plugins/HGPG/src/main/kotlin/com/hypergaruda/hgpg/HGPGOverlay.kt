@@ -396,16 +396,20 @@ internal object HGPGOverlay {
             (if (theme.id == active.id) "✓  " else "◉  ") + theme.name + " — " + theme.subtitle
         }.toTypedArray()
         val dialog = AlertDialog.Builder(activity).setTitle("HG PG · Animated Theme Garage")
-            .setMessage("Choose a visual system. Each theme has its own animated motion and color language.")
+            .setMessage("Choose a built-in visual system. HG PG applies supported app-wide color resources itself; no separate theme plugin or JSON import is needed.")
             .setItems(labels) { d, which ->
                 val chosen = themes[which]
                 settings.setString("theme_profile", chosen.id)
+                HGPGGlobalThemeEngine.apply(chosen)
                 refreshTheme(settings)
-                toast(activity, "Theme applied: " + chosen.name)
+                toast(activity, "Native app theme applied: " + chosen.name)
                 d.dismiss()
+                activity.window?.decorView?.postDelayed({
+                    HGPGGlobalThemeEngine.refreshActivity(activity)
+                }, 250L)
             }.setNegativeButton("Close", null).create()
         dialog.setOnShowListener {
-            dialog.setMessage("Applies to HG PG's launcher and panel only; Discord's full interface is not modified.")
+            dialog.setMessage("Applies to supported Aliucord/Discord resource colors and HG PG's animated panel. Some hard-coded or third-party elements may remain unchanged.")
         }
         dialog.show()
     }
