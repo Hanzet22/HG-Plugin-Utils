@@ -16,7 +16,7 @@ internal object HGPGUIAnimations {
                 view !is EditText &&
                 !view.isClickable &&
                 !view.isFocusable &&
-                !view.text.isNullOrBlank()
+                view.text.length > 0
             ) {
                 targets.add(view)
             }
