@@ -1,9 +1,13 @@
-version = "0.8.0"
+version = "0.8.1"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.8.1
+        * Added a non-interactive native Canvas motion overlay above Aliucord content so animation is visible even when Discord child views have opaque backgrounds.
+        * Added theme-aware ambient effects for all six built-in profiles, automatic activity reattachment, touch pass-through, and lifecycle cleanup.
+
         # 0.8.0
         * Added a native animated background across the actual Aliucord screen root, with six theme-specific moving backdrops.
         * Made screen transitions replay on activity resume and dialog show rather than stopping after the first visit.

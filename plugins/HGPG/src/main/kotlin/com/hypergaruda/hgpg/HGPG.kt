@@ -16,6 +16,11 @@ class HGPG : Plugin() {
             .withArgs(settings)
 
         try {
+            HGPGGlobalMotionOverlay.start(settings)
+        } catch (error: Throwable) {
+            android.util.Log.e("HGPG", "Native motion overlay could not start", error)
+        }
+        try {
             HGPGGlobalThemeEngine.start(context, settings, patcher)
         } catch (error: Throwable) {
             android.util.Log.e("HGPG", "Built-in global theme engine could not start", error)
@@ -40,13 +45,16 @@ class HGPG : Plugin() {
             override fun onActivityPaused(activity: Activity) {}
             override fun onActivityStopped(activity: Activity) {}
             override fun onActivitySaveInstanceState(activity: Activity, outState: android.os.Bundle) {}
-            override fun onActivityDestroyed(activity: Activity) {}
+            override fun onActivityDestroyed(activity: Activity) {
+                HGPGGlobalMotionOverlay.detach(activity)
+            }
 
             override fun onActivityResumed(activity: Activity) {
                 activity.window.decorView.post {
                     if (!activity.isFinishing && !activity.isDestroyed) {
                         HGPGOverlay.attach(activity, settings)
                         HGPGMotionEngine.attach(activity)
+                        HGPGGlobalMotionOverlay.attach(activity)
                         HGPGHighTechRenderer.attach(activity)
                     }
                 }
@@ -60,6 +68,7 @@ class HGPG : Plugin() {
         val app = context.applicationContext as? Application
         activityCallbacks?.let { app?.unregisterActivityLifecycleCallbacks(it) }
         activityCallbacks = null
+        HGPGGlobalMotionOverlay.stop()
         HGPGOverlay.dismiss()
         patcher.unpatchAll()
         HGPGGlobalThemeEngine.stop()
