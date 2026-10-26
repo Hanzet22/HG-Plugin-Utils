@@ -272,7 +272,7 @@ internal object HGPGOverlay {
             }
         }
         current.show()
-        HGPGGUIAnimations.fadeInTextTree(root, staggerMs = 16L)
+        HGPGUIAnimations.fadeInTextTree(root, staggerMs = 16L)
         current.window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
