@@ -2,11 +2,11 @@
 
 A privacy-conscious Aliucord utility plugin, built with Kotlin and compiled through GitHub Actions.
 
-## Current plugin version: 0.5.0 — Native App Theme Garage
+## Current plugin version: 0.6.0 — Native App Motion Garage
 
-HG PG includes six custom animated themes and a **built-in app-wide resource color engine**. Pick a theme from HG PG's floating panel or plugin settings; it applies supported Aliucord/Discord color resources, theme attributes, and selected drawable tints directly from HG PG.
+HG PG includes six custom animated themes, a **built-in app-wide resource color engine**, and an **app-wide motion engine**. Pick a theme from HG PG's floating panel or plugin settings; it applies supported Aliucord/Discord color resources and assigns that theme's motion style to screen transitions, component entrances, dialogs, and interactive touch/click feedback.
 
-**No separate Themer plugin, external theme plugin, or theme JSON import is required.** Because some colors are hard-coded or belong to third-party components, a few UI elements may remain unchanged. The plugin preserves its animated visual effects in the HG PG launcher and panel.
+**No separate Themer plugin, external theme plugin, or theme JSON import is required.** The motion engine animates supported native views as they attach, adds screen/dialog entrance transitions, and applies theme-specific press/release and click feedback without replacing the app's existing listeners. It deliberately avoids text editors, WebViews, video/surface views, and HG PG's own custom UI to reduce interference. Some third-party/custom-rendered content may not expose native views, and a few elements may remain static.
 
 The six built-in themes are:
 
@@ -24,7 +24,7 @@ HG PG uses an **in-app floating panel instead of slash commands**. Tap the round
 - **Private Notes** — save, edit, and clear a local note.
 - **Fursona Creator** — generate a simple text card from details you provide and copy it to the clipboard.
 - **Network Diagnostics** — report Android's current network transport and validated-internet status. This is not a speed test or latency measurement.
-- **Animated Theme Garage** — choose one of six built-in app-wide color themes and animated HG PG styles.
+- **Animated Theme Garage** — choose one of six built-in app-wide color themes and theme-specific motion styles across supported app views.
 - **Community Shortcuts** — shows Indonesia Furs and Anthro Indonesia as community names and recommends using verified official pages or invites.
 - **Privacy & About** — explains the plugin's local-first behavior.
 
@@ -38,7 +38,7 @@ HG PG does not scrape messages, members, channels, or servers; does not send tel
 
 The Build HG PG GitHub Actions workflow builds the plugin with JDK 21 and Gradle 9.3.1, then uploads the installable plugin ZIP as a workflow artifact. Open Actions, choose Build HG PG, open the latest successful run, then download **hg-pg-plugin**.
 
-A successful commit is not proof of a successful build: check the workflow result before installing anything.
+The build workflow uploads a single installable plugin ZIP named **hg-pg-plugin**. A successful commit is not proof of a successful build: check the workflow result before installing anything.
 
 ## License
 

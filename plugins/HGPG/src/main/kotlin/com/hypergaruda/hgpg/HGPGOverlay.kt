@@ -401,6 +401,7 @@ internal object HGPGOverlay {
                 val chosen = themes[which]
                 settings.setString("theme_profile", chosen.id)
                 HGPGGlobalThemeEngine.apply(chosen)
+                HGPGMotionEngine.setTheme(chosen)
                 refreshTheme(settings)
                 toast(activity, "Native app theme applied: " + chosen.name)
                 d.dismiss()

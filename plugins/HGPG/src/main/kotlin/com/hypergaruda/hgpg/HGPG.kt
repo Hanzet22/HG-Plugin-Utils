@@ -20,6 +20,11 @@ class HGPG : Plugin() {
         } catch (error: Throwable) {
             android.util.Log.e("HGPG", "Built-in global theme engine could not start", error)
         }
+        try {
+            HGPGMotionEngine.start(context, settings, patcher)
+        } catch (error: Throwable) {
+            android.util.Log.e("HGPG", "Global UI motion engine could not start", error)
+        }
 
         // Reattach whenever an Aliucord activity becomes active. Tab navigation can
         // recreate or switch activities after the original onCreate hook has fired.
@@ -36,6 +41,7 @@ class HGPG : Plugin() {
                 activity.window.decorView.post {
                     if (!activity.isFinishing && !activity.isDestroyed) {
                         HGPGOverlay.attach(activity, settings)
+                        HGPGMotionEngine.attach(activity)
                     }
                 }
             }
@@ -51,5 +57,6 @@ class HGPG : Plugin() {
         HGPGOverlay.dismiss()
         patcher.unpatchAll()
         HGPGGlobalThemeEngine.stop()
+        HGPGMotionEngine.stop()
     }
 }

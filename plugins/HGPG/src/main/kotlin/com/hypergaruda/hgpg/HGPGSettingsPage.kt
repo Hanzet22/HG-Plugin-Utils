@@ -72,6 +72,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
                     activeId = theme.id
                     pluginSettings.setString("theme_profile", theme.id)
                     HGPGGlobalThemeEngine.apply(theme)
+                    HGPGMotionEngine.setTheme(theme)
                     current.text = "Current native theme: " + theme.name
                     current.setTextColor(theme.text)
                     container.background = HGPGAnimatedDrawable(theme, cornerScale = 0.04f)
