@@ -64,7 +64,7 @@ internal object HGPGOverlay {
                     gravity = Gravity.CENTER
                     setTextColor(Color.WHITE)
                     contentDescription = "Drag to move HG PG button; tap to open the control panel"
-                    background = shape(activity, accent(settings), 100f, 0x99FFFFFF.toInt())
+                    background = HGPGAnimatedDrawable(HGPGThemes.get(realString(settings.getString("theme_profile", "garuda"))), cornerScale = 0.5f)
                     elevation = dp(activity, 8).toFloat()
                     isClickable = true
                     isFocusable = true
@@ -162,15 +162,33 @@ internal object HGPGOverlay {
         launchers.clear()
     }
 
+    /** Refresh existing launcher(s) immediately after a theme is selected. */
+    fun refreshTheme(settings: SettingsAPI) {
+        val selected = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda")))
+        launchers.forEach { (activity, button) ->
+            if (!activity.isFinishing && !activity.isDestroyed) {
+                button.background = HGPGAnimatedDrawable(selected, cornerScale = 0.5f)
+                button.animate().cancel()
+                button.animate().scaleX(1.12f).scaleY(1.12f).setDuration(140)
+                    .withEndAction {
+                        button.animate().scaleX(1f).scaleY(1f).setDuration(180)
+                            .setInterpolator(DecelerateInterpolator()).start()
+                    }.start()
+            }
+        }
+        panelRoot?.background = HGPGAnimatedDrawable(selected, cornerScale = 0.06f)
+    }
+
     private fun showPanel(activity: Activity, settings: SettingsAPI) {
         if (activity.isFinishing || activity.isDestroyed) return
+        val theme = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda")))
         try { panel?.dismiss() } catch (_: Throwable) {}
         panelRoot = null
         closingPanel = false
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(activity, 16), dp(activity, 16), dp(activity, 16), dp(activity, 16))
-            background = shape(activity, BG, 22f, 0xFF303B4B.toInt())
+            background = HGPGAnimatedDrawable(theme, cornerScale = 0.06f)
             alpha = 0f
             scaleX = 0.94f
             scaleY = 0.94f
@@ -182,12 +200,12 @@ internal object HGPGOverlay {
             text = "HG PG"
             textSize = 23f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(FG)
+            setTextColor(theme.text)
         })
         titleBox.addView(TextView(activity).apply {
-            text = "HyperGaruda · Control Panel"
+            text = "HyperGaruda · " + theme.name
             textSize = 12f
-            setTextColor(MUTED)
+            setTextColor(theme.muted)
         })
         header.addView(titleBox, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         header.addView(TextView(activity).apply {
@@ -200,7 +218,7 @@ internal object HGPGOverlay {
             setOnClickListener { dismissPanelAnimated() }
         })
         root.addView(header)
-        root.addView(View(activity).apply { setBackgroundColor(0xFF303B4B.toInt()) },
+        root.addView(View(activity).apply { setBackgroundColor(theme.border) },
             LinearLayout.LayoutParams(-1, dp(activity, 1)).apply {
                 topMargin = dp(activity, 12); bottomMargin = dp(activity, 12)
             })
@@ -208,28 +226,28 @@ internal object HGPGOverlay {
         val options = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
         scroll.addView(options)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        addText(options, "Your utilities, one panel.", 18f, FG, true, 0, 4)
-        addText(options, "No slash commands required. Choose a tool below.", 13f, MUTED, false, 0, 14)
-        addCard(options, "📝  Private Notes", "Save or clear a note on this device.") {
+        addText(options, "Your utilities, one panel.", 18f, theme.text, true, 0, 4)
+        addText(options, "Six animated visual systems. Choose a tool below.", 13f, theme.muted, false, 0, 14)
+        addCard(options, "📝  Private Notes", "Save or clear a note on this device.", theme) {
             dismissPanelAnimated { showNote(activity, settings) }
         }
-        addCard(options, "🐉  Fursona Creator", "Build a text card and copy it to clipboard.") {
+        addCard(options, "🐉  Fursona Creator", "Build a text card and copy it to clipboard.", theme) {
             dismissPanelAnimated { showFursona(activity) }
         }
-        addCard(options, "📶  Network Diagnostics", "Check Android connection and validated-internet state.") {
+        addCard(options, "📶  Network Diagnostics", "Check Android connection and validated-internet state.", theme) {
             dismissPanelAnimated { showNetwork(activity) }
         }
-        addCard(options, "🎨  Panel Theme", "Choose the accent color for the HG launcher.") {
+        addCard(options, "🎨  Animated Theme Garage", "Six custom palettes with their own moving backdrop and launcher animation.", theme) {
             dismissPanelAnimated { showThemes(activity, settings) }
         }
-        addCard(options, "🌐  Community Shortcuts", "Indonesia Furs and Anthro Indonesia.") {
+        addCard(options, "🌐  Community Shortcuts", "Indonesia Furs and Anthro Indonesia.", theme) {
             dismissPanelAnimated {
                 AlertDialog.Builder(activity).setTitle("Community Shortcuts")
                     .setMessage("Indonesia Furs\nAnthro Indonesia\n\nUse each community's verified official page or invite. HG PG does not automatically join servers.")
                     .setPositiveButton("Close", null).show()
             }
         }
-        addCard(options, "🔒  Privacy & About", "Local-first utilities, no telemetry.") {
+        addCard(options, "🔒  Privacy & About", "Local-first utilities, no telemetry.", theme) {
             dismissPanelAnimated {
                 AlertDialog.Builder(activity).setTitle("HG PG · Privacy")
                     .setMessage("HG PG does not scrape Discord messages, members, channels, or servers. It does not send telemetry or automate Discord user actions. Notes and profile preferences stay in Aliucord plugin settings on this device. Network diagnostics read Android's local connection state. Fursona cards are generated on-device.\n\nThe floating button is part of Aliucord's own UI; no draw-over-other-apps permission is requested.")
@@ -372,29 +390,35 @@ internal object HGPGOverlay {
     }
 
     private fun showThemes(activity: Activity, settings: SettingsAPI) {
-        val names = arrayOf("Garuda Red", "Midnight Blue", "Forest Green", "Aurora Teal")
-        val profiles = arrayOf("garuda", "midnight", "forest", "aurora")
-        val dialog = AlertDialog.Builder(activity).setTitle("Panel Theme")
-            .setItems(names) { d, which ->
-                val profile = profiles[which]
-                settings.setString("theme_profile", profile)
-                launchers[activity]?.background = shape(activity, accent(settings), 100f, 0x99FFFFFF.toInt())
-                toast(activity, "Panel accent saved: " + profile)
+        val themes = HGPGThemes.all
+        val active = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda")))
+        val labels = themes.map { theme ->
+            (if (theme.id == active.id) "✓  " else "◉  ") + theme.name + " — " + theme.subtitle
+        }.toTypedArray()
+        val dialog = AlertDialog.Builder(activity).setTitle("HG PG · Animated Theme Garage")
+            .setMessage("Choose a visual system. Each theme has its own animated motion and color language.")
+            .setItems(labels) { d, which ->
+                val chosen = themes[which]
+                settings.setString("theme_profile", chosen.id)
+                refreshTheme(settings)
+                toast(activity, "Theme applied: " + chosen.name)
                 d.dismiss()
             }.setNegativeButton("Close", null).create()
         dialog.setOnShowListener {
-            dialog.setMessage("This changes the HG PG launcher accent only, not Discord's full interface.")
+            dialog.setMessage("Applies to HG PG's launcher and panel only; Discord's full interface is not modified.")
         }
         dialog.show()
     }
 
-    private fun addCard(parent: LinearLayout, title: String, description: String, click: () -> Unit) {
+    private fun addCard(parent: LinearLayout, title: String, description: String, theme: HGPGTheme, click: () -> Unit) {
         val ctx = parent.context
         val tile = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(ctx, 14), dp(ctx, 12), dp(ctx, 14), dp(ctx, 12))
-            background = shape(ctx, CARD, 15f)
+            background = shape(ctx, theme.surfaceRaised, 15f, theme.border)
             isClickable = true; isFocusable = true
+            alpha = 0f
+            translationY = dp(ctx, 9).toFloat()
             setOnClickListener {
                 animate().scaleX(0.98f).scaleY(0.98f).setDuration(65).withEndAction {
                     animate().scaleX(1f).scaleY(1f).setDuration(80).start()
@@ -402,9 +426,14 @@ internal object HGPGOverlay {
                 }.start()
             }
         }
-        tile.addView(TextView(ctx).apply { text = title; textSize = 16f; typeface = Typeface.DEFAULT_BOLD; setTextColor(FG) })
-        tile.addView(TextView(ctx).apply { text = description; textSize = 12f; setTextColor(MUTED); setPadding(0, dp(ctx, 4), 0, 0) })
+        tile.addView(TextView(ctx).apply { text = title; textSize = 16f; typeface = Typeface.DEFAULT_BOLD; setTextColor(theme.text) })
+        tile.addView(TextView(ctx).apply { text = description; textSize = 12f; setTextColor(theme.muted); setPadding(0, dp(ctx, 4), 0, 0) })
+        val stagger = parent.childCount * 42L
         parent.addView(tile, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(ctx, 10) })
+        tile.postDelayed({
+            if (tile.parent != null) tile.animate().alpha(1f).translationY(0f).setDuration(260)
+                .setInterpolator(DecelerateInterpolator()).start()
+        }, stagger)
     }
 
     private fun addText(parent: LinearLayout, value: String, size: Float, color: Int, bold: Boolean, top: Int, bottom: Int) {
@@ -466,12 +495,7 @@ internal object HGPGOverlay {
 
     private fun toast(activity: Activity, message: String) = Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
 
-    private fun accent(settings: SettingsAPI): Int = when (realString(settings.getString("theme_profile", "garuda")).lowercase()) {
-        "midnight" -> Color.rgb(101, 132, 255)
-        "forest" -> Color.rgb(52, 173, 113)
-        "aurora" -> Color.rgb(45, 183, 177)
-        else -> Color.rgb(204, 34, 0)
-    }
+    private fun accent(settings: SettingsAPI): Int = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda"))).accent
 
     private fun shape(ctx: Context, color: Int, radius: Float, stroke: Int = Color.TRANSPARENT) =
         GradientDrawable().apply {

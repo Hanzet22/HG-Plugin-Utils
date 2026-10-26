@@ -1,9 +1,14 @@
-version = "0.3.2"
+version = "0.4.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.4.0
+        * Added six custom animated themes: Deep Sea Blue, Garuda Indonesia, Light Emitting Orange, Gran Turismo Sport, Gran Turismo Old, and CRT PS2.
+        * Added moving theme backdrops, palette-aware panel cards, staggered tile entrances, and animated launcher theme transitions.
+        * Added theme selection to both the floating panel and plugin settings page.
+
         # 0.3.2
         * Reattach the floating launcher from Android Activity lifecycle callbacks whenever an Aliucord activity resumes.
         * Fix launcher visibility when navigating between screens or when the host Activity is recreated.

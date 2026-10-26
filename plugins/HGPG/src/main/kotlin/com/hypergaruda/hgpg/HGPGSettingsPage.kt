@@ -1,6 +1,9 @@
 package com.hypergaruda.hgpg
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -9,50 +12,85 @@ import com.aliucord.fragments.SettingsPage
 
 class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage() {
     override fun onViewBound(view: View) {
-        // SettingsPage initializes its internal layout here. This must run before addView().
         super.onViewBound(view)
-
         val context = view.context
+        val density = context.resources.displayMetrics.density
+        val activeTheme = HGPGThemes.get(toRealString(pluginSettings.getString("theme_profile", "garuda")))
+        var activeId = activeTheme.id
+
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(24, 24, 24, 24)
+            setPadding((20 * density).toInt(), (20 * density).toInt(), (20 * density).toInt(), (20 * density).toInt())
+            background = HGPGAnimatedDrawable(activeTheme, cornerScale = 0.04f)
         }
 
         container.addView(TextView(context).apply {
-            text = "HG PG · Theme Profile"
+            text = "HG PG · Animated Theme Garage"
             textSize = 20f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(activeTheme.text)
         })
 
         container.addView(TextView(context).apply {
-            text = "Choose a saved visual profile. This MVP stores the preference; it does not recolor the full Discord interface."
+            text = "Six animated themes for the floating launcher and HG PG panel. Each one has distinct colors and moving effects; this does not recolor Discord's entire interface."
             textSize = 14f
-            setPadding(0, 12, 0, 16)
+            setTextColor(activeTheme.muted)
+            setPadding(0, (10 * density).toInt(), 0, (16 * density).toInt())
         })
 
-        val savedProfile = toRealString(pluginSettings.getString("theme_profile", "garuda"))
         val current = TextView(context).apply {
-            text = "Current profile: $savedProfile"
+            text = "Current animated theme: " + activeTheme.name
             textSize = 16f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(activeTheme.text)
+            setPadding(0, 0, 0, (12 * density).toInt())
         }
         container.addView(current)
 
-        listOf("garuda", "midnight", "forest", "aurora").forEach { profile ->
-            container.addView(Button(context).apply {
-                text = "Use $profile"
-                setOnClickListener {
-                    pluginSettings.setString("theme_profile", profile)
-                    current.text = "Current profile: $profile"
+        val buttons = mutableListOf<Pair<HGPGTheme, Button>>()
+        fun refreshButtons() {
+            buttons.forEach { entry ->
+                val theme = entry.first
+                val button = entry.second
+                val selected = theme.id == activeId
+                button.text = (if (selected) "✓ ACTIVE  ·  " else "APPLY  ·  ") + theme.name
+                button.setTextColor(if (selected) Color.BLACK else theme.text)
+                button.background = GradientDrawable().apply {
+                    cornerRadius = 12f * density
+                    setColor(if (selected) theme.accent else theme.surfaceRaised)
+                    setStroke((1.2f * density).toInt().coerceAtLeast(1), if (selected) theme.accent else theme.border)
                 }
-            })
+            }
         }
 
+        HGPGThemes.all.forEach { theme ->
+            val button = Button(context).apply {
+                isAllCaps = false
+                textSize = 14f
+                minHeight = (48 * density).toInt()
+                setOnClickListener {
+                    activeId = theme.id
+                    pluginSettings.setString("theme_profile", theme.id)
+                    current.text = "Current animated theme: " + theme.name
+                    current.setTextColor(theme.text)
+                    container.background = HGPGAnimatedDrawable(theme, cornerScale = 0.04f)
+                    HGPGOverlay.refreshTheme(pluginSettings)
+                    refreshButtons()
+                    animate().scaleX(0.97f).scaleY(0.97f).setDuration(70).withEndAction {
+                        animate().scaleX(1f).scaleY(1f).setDuration(120).start()
+                    }.start()
+                }
+            }
+            buttons.add(theme to button)
+            container.addView(button, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = (8 * density).toInt()
+            })
+        }
+        refreshButtons()
         addView(container)
     }
 
-    /**
-     * Aliucord may expose settings strings as an obfuscated CharSequence wrapper.
-     * Read it through the interface reflectively before treating it as a String.
-     */
+    /** Read settings through CharSequence to remain compatible with Aliucord's wrapper. */
     private fun toRealString(value: Any?): String {
         if (value == null) return ""
         return try {
