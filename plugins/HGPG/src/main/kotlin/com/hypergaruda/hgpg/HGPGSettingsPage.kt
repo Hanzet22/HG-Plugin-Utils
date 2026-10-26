@@ -29,8 +29,9 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
             setPadding(0, 12, 0, 16)
         })
 
+        val savedProfile = toRealString(pluginSettings.getString("theme_profile", "garuda"))
         val current = TextView(context).apply {
-            text = "Current profile: ${pluginSettings.getString("theme_profile", "garuda")}"
+            text = "Current profile: $savedProfile"
             textSize = 16f
         }
         container.addView(current)
@@ -46,5 +47,36 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
         }
 
         addView(container)
+    }
+
+    /**
+     * Aliucord may expose settings strings as an obfuscated CharSequence wrapper.
+     * Read it through the interface reflectively before treating it as a String.
+     */
+    private fun toRealString(value: Any?): String {
+        if (value == null) return ""
+        return try {
+            val charSequenceClass = CharSequence::class.java
+            val lengthMethod = charSequenceClass.getMethod("length")
+            val charAtMethod = charSequenceClass.getMethod("charAt", Integer.TYPE)
+            val length = (lengthMethod.invoke(value) as Int).coerceAtLeast(0)
+            val result = java.lang.StringBuilder(length)
+            var index = 0
+            while (index < length) {
+                result.append(charAtMethod.invoke(value, index) as Char)
+                index += 1
+            }
+            result.toString()
+        } catch (_: Throwable) {
+            try {
+                val method = Any::class.java.getMethod("toString")
+                val rendered = method.invoke(value)
+                val bytes = java.io.ByteArrayOutputStream()
+                java.io.PrintStream(bytes).use { stream -> stream.print(rendered) }
+                bytes.toString("UTF-8")
+            } catch (_: Throwable) {
+                ""
+            }
+        }
     }
 }
