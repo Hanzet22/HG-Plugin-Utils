@@ -25,6 +25,11 @@ class HGPG : Plugin() {
         } catch (error: Throwable) {
             android.util.Log.e("HGPG", "Global UI motion engine could not start", error)
         }
+        try {
+            HGPGHighTechRenderer.start(context, settings, patcher)
+        } catch (error: Throwable) {
+            android.util.Log.e("HGPG", "High-tech render engine could not start", error)
+        }
 
         // Reattach whenever an Aliucord activity becomes active. Tab navigation can
         // recreate or switch activities after the original onCreate hook has fired.
@@ -42,6 +47,7 @@ class HGPG : Plugin() {
                     if (!activity.isFinishing && !activity.isDestroyed) {
                         HGPGOverlay.attach(activity, settings)
                         HGPGMotionEngine.attach(activity)
+                        HGPGHighTechRenderer.attach(activity)
                     }
                 }
             }
@@ -58,5 +64,6 @@ class HGPG : Plugin() {
         patcher.unpatchAll()
         HGPGGlobalThemeEngine.stop()
         HGPGMotionEngine.stop()
+        HGPGHighTechRenderer.stop()
     }
 }

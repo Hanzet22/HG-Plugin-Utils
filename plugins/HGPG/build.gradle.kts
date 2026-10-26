@@ -1,14 +1,14 @@
-version = "0.6.0"
+version = "0.7.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
-        # 0.6.0
-        * Added an app-wide native motion engine for screen entrances, dynamic component entrances, dialog transitions, and touch/click feedback.
-        * Each of the six theme profiles now supplies a distinct motion language for the supported Aliucord/Discord UI.
-        * Kept the built-in app-wide color engine and the HG PG launcher's custom animations.
-        * Animation hooks preserve existing click/touch listeners and skip editors, video surfaces, and web views.
+        # 0.7.0
+        * Added WebView load transitions with blur-to-sharp rendering on Android 12+ and graceful fallback on older Android versions.
+        * Added staggered character-level reveal for short non-input TextView updates, preserving existing spans and excluding editors and numeric counters.
+        * Added transient hardware-layer acceleration for animated views and native render effects where supported.
+        * Kept the app-wide color and motion engines and six theme-specific animation styles.
 
         # 0.4.0
         * Added six custom animated themes: Deep Sea Blue, Garuda Indonesia, Light Emitting Orange, Gran Turismo Sport, Gran Turismo Old, and CRT PS2.

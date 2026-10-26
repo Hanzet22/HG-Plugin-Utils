@@ -402,6 +402,7 @@ internal object HGPGOverlay {
                 settings.setString("theme_profile", chosen.id)
                 HGPGGlobalThemeEngine.apply(chosen)
                 HGPGMotionEngine.setTheme(chosen)
+                HGPGHighTechRenderer.setTheme(chosen)
                 refreshTheme(settings)
                 toast(activity, "Native app theme applied: " + chosen.name)
                 d.dismiss()

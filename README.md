@@ -2,11 +2,11 @@
 
 A privacy-conscious Aliucord utility plugin, built with Kotlin and compiled through GitHub Actions.
 
-## Current plugin version: 0.6.0 — Native App Motion Garage
+## Current plugin version: 0.7.0 — High-Tech UI Rendering
 
-HG PG includes six custom animated themes, a **built-in app-wide resource color engine**, and an **app-wide motion engine**. Pick a theme from HG PG's floating panel or plugin settings; it applies supported Aliucord/Discord color resources and assigns that theme's motion style to screen transitions, component entrances, dialogs, and interactive touch/click feedback.
+HG PG includes six custom animated themes, a **built-in app-wide resource color engine**, an **app-wide motion engine**, and a **high-tech rendering layer**. It adds theme-specific screen and interaction motion, WebView load transitions, character-by-character reveals for short non-input text updates, and temporary hardware-accelerated layers. On Android 12+, supported WebViews can use a brief blur-to-sharp RenderEffect transition.
 
-**No separate Themer plugin, external theme plugin, or theme JSON import is required.** The motion engine animates supported native views as they attach, adds screen/dialog entrance transitions, and applies theme-specific press/release and click feedback without replacing the app's existing listeners. It deliberately avoids text editors, WebViews, video/surface views, and HG PG's own custom UI to reduce interference. Some third-party/custom-rendered content may not expose native views, and a few elements may remain static.
+**No separate Themer plugin, external theme plugin, or theme JSON import is required.** The motion engine animates supported native views as they attach, adds screen/dialog entrance transitions, and applies theme-specific press/release and click feedback without replacing existing listeners. The high-tech renderer adds WebView load transitions without injecting scripts into page content, plus staggered character reveals for short non-input text changes. Editors, frequently changing numeric counters, video/surface views, and HG PG's own custom UI are excluded to avoid interfering with typing, playback, or live values. Android 12+ blur effects are optional and fall back automatically when unsupported. Hardware layers are temporary and released after transitions.
 
 The six built-in themes are:
 
@@ -24,7 +24,7 @@ HG PG uses an **in-app floating panel instead of slash commands**. Tap the round
 - **Private Notes** — save, edit, and clear a local note.
 - **Fursona Creator** — generate a simple text card from details you provide and copy it to the clipboard.
 - **Network Diagnostics** — report Android's current network transport and validated-internet status. This is not a speed test or latency measurement.
-- **Animated Theme Garage** — choose one of six built-in app-wide color themes and theme-specific motion styles across supported app views.
+- **Animated Theme Garage** — choose one of six built-in app-wide color themes and theme-specific motion styles, WebView transitions, and text reveals across supported app views.
 - **Community Shortcuts** — shows Indonesia Furs and Anthro Indonesia as community names and recommends using verified official pages or invites.
 - **Privacy & About** — explains the plugin's local-first behavior.
 
