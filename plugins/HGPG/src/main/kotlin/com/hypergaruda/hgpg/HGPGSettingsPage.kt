@@ -90,7 +90,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
                 ambientIntensityLabel.text = "Ambient Light Intensity: $ambientIntensity%"
                 HGPGGlobalMotionOverlay.setAmbientIntensity(ambientIntensity)
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+            override fun onStartTrackingTouch(seekBar: SeekBar?) { }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 pluginSettings.setInt("ambient_light_intensity", ambientIntensity)
             }
