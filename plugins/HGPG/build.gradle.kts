@@ -1,9 +1,14 @@
-version = "0.3.1"
+version = "0.3.2"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.3.2
+        * Reattach the floating launcher from Android Activity lifecycle callbacks whenever an Aliucord activity resumes.
+        * Fix launcher visibility when navigating between screens or when the host Activity is recreated.
+        * Preserve draggable positioning and panel animations from 0.3.1.
+
         # 0.3.1
         * Added drag-and-drop positioning for the floating HG launcher.
         * Persisted launcher position as a normalized screen-relative location in plugin settings.
