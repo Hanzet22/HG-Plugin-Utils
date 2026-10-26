@@ -1,9 +1,15 @@
-version = "0.7.0"
+version = "0.8.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.8.0
+        * Added a native animated background across the actual Aliucord screen root, with six theme-specific moving backdrops.
+        * Made screen transitions replay on activity resume and dialog show rather than stopping after the first visit.
+        * Strengthened tap/press/release feedback and cleared entrance tracking as views detach during navigation.
+        * Kept animation rendering native to Android View/Drawable APIs; CSS effects remain limited to WebView content.
+
         # 0.7.0
         * Added WebView load transitions with blur-to-sharp rendering on Android 12+ and graceful fallback on older Android versions.
         * Added staggered character-level reveal for short non-input TextView updates, preserving existing spans and excluding editors and numeric counters.
