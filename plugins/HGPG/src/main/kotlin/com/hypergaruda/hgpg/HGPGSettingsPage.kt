@@ -1,5 +1,7 @@
 package com.hypergaruda.hgpg
 
+import android.animation.ValueAnimator
+import android.app.Activity
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.view.View
@@ -9,6 +11,7 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
+import android.view.animation.DecelerateInterpolator
 import com.aliucord.api.SettingsAPI
 import com.aliucord.fragments.SettingsPage
 
@@ -24,6 +27,8 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
             orientation = LinearLayout.VERTICAL
             setPadding((20 * density).toInt(), (20 * density).toInt(), (20 * density).toInt(), (20 * density).toInt())
             background = HGPGAnimatedDrawable(activeTheme, cornerScale = 0.04f)
+            alpha = 0f
+            translationY = (10 * density).toFloat()
         }
 
         container.addView(TextView(context).apply {
@@ -68,6 +73,9 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
             ambientEnabled = checked
             pluginSettings.setBool("ambient_light_enabled", checked)
             HGPGGlobalMotionOverlay.setAmbientEnabled(checked)
+            (context as? Activity)?.let { activity ->
+                HGPGInAppBubble.show(activity, "Ambient Light", if (checked) "Ambient lighting enabled." else "Ambient lighting disabled.")
+            }
         }
         container.addView(ambientSwitch, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             bottomMargin = (4 * density).toInt()
@@ -79,25 +87,72 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
             setTextColor(activeTheme.muted)
         }
         container.addView(ambientIntensityLabel)
+        val targetAmbientIntensity = ambientIntensity
+        var sliderIntroAnimator: ValueAnimator? = null
         val ambientIntensitySlider = SeekBar(context).apply {
             max = 100
-            progress = ambientIntensity
+            progress = 0
             contentDescription = "Ambient Light intensity"
         }
         ambientIntensitySlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) sliderIntroAnimator?.cancel()
                 ambientIntensity = progress.coerceIn(0, 100)
                 ambientIntensityLabel.text = "Ambient Light Intensity: $ambientIntensity%"
                 HGPGGlobalMotionOverlay.setAmbientIntensity(ambientIntensity)
+                if (fromUser) {
+                    ambientIntensityLabel.animate().cancel()
+                    ambientIntensityLabel.animate().scaleX(1.045f).scaleY(1.045f).setDuration(70L)
+                        .withEndAction {
+                            ambientIntensityLabel.animate().scaleX(1f).scaleY(1f).setDuration(110L)
+                                .setInterpolator(DecelerateInterpolator()).start()
+                        }.start()
+                }
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) { }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                sliderIntroAnimator?.cancel()
+                seekBar?.let { slider ->
+                    slider.animate().cancel()
+                    slider.animate().scaleY(1.10f).translationY(-density)
+                        .setDuration(100L).setInterpolator(DecelerateInterpolator()).start()
+                }
+            }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 pluginSettings.setInt("ambient_light_intensity", ambientIntensity)
+                seekBar?.let { slider ->
+                    slider.animate().scaleY(1f).translationY(0f)
+                        .setDuration(150L).setInterpolator(DecelerateInterpolator()).start()
+                }
+                ambientIntensityLabel.animate().scaleX(1f).scaleY(1f)
+                    .setDuration(120L).setInterpolator(DecelerateInterpolator()).start()
+                (context as? Activity)?.let { activity ->
+                    HGPGInAppBubble.show(activity, "Ambient Light", "Intensity saved at $ambientIntensity%.")
+                }
             }
         })
         container.addView(ambientIntensitySlider, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
             bottomMargin = (10 * density).toInt()
         })
+        ambientIntensitySlider.alpha = 0f
+        ambientIntensitySlider.scaleY = 0.86f
+        ambientIntensitySlider.post {
+            if (ambientIntensitySlider.isAttachedToWindow) {
+                ambientIntensitySlider.animate().alpha(1f).scaleY(1f).setDuration(240L)
+                    .setInterpolator(DecelerateInterpolator()).start()
+                sliderIntroAnimator = ValueAnimator.ofInt(0, targetAmbientIntensity).apply {
+                    duration = 430L
+                    interpolator = DecelerateInterpolator()
+                    addUpdateListener { animation ->
+                        if (ambientIntensitySlider.isAttachedToWindow) {
+                            ambientIntensitySlider.progress = animation.animatedValue as Int
+                        } else {
+                            cancel()
+                        }
+                    }
+                    start()
+                }
+            }
+        }
 
         val current = TextView(context).apply {
             text = "Current native theme: " + activeTheme.name
@@ -135,6 +190,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
                     HGPGGlobalThemeEngine.apply(theme)
                     HGPGMotionEngine.setTheme(theme)
                     HGPGGlobalMotionOverlay.setTheme(theme)
+                    HGPGInAppBubble.setTheme(theme)
                     HGPGHighTechRenderer.setTheme(theme)
                     current.text = "Current native theme: " + theme.name
                     current.setTextColor(theme.text)
@@ -142,6 +198,9 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
                     HGPGOverlay.refreshTheme(pluginSettings)
                     refreshButtons()
                     HGPGGlobalThemeEngine.refreshActivity(context)
+                    (context as? Activity)?.let { activity ->
+                        HGPGInAppBubble.show(activity, "Theme applied", theme.name)
+                    }
                     animate().scaleX(0.97f).scaleY(0.97f).setDuration(70).withEndAction {
                         animate().scaleX(1f).scaleY(1f).setDuration(120).start()
                     }.start()
@@ -154,6 +213,9 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
         }
         refreshButtons()
         addView(container)
+        container.animate().alpha(1f).translationY(0f).setDuration(280L)
+            .setInterpolator(DecelerateInterpolator()).start()
+        HGPGGUIAnimations.fadeInTextTree(container, staggerMs = 12L)
     }
 
     /** Read settings through CharSequence to remain compatible with Aliucord's wrapper. */
