@@ -19,31 +19,26 @@ class HGPG : Plugin() {
 
         commands.registerCommand("hgpg-status", "Show HG PG module status") {
             CommandsAPI.CommandResult(
-                """
-                **HG PG · HyperGaruda Plugin**
-                • Local utility notes: available
-                • Fursona card formatter: available
-                • Network status diagnostics: available
-                • Theme profile manager: available (profile only; full Discord recoloring is not enabled)
-                • Community shortcuts: available
-                Privacy: no message/member/channel/server scraping and no telemetry.
-                """.trimIndent(),
+                "**HG PG · HyperGaruda Plugin**\n" +
+                    "• Local utility notes: available\n" +
+                    "• Fursona card formatter: available\n" +
+                    "• Network status diagnostics: available\n" +
+                    "• Theme profile manager: available (profile only; full Discord recoloring is not enabled)\n" +
+                    "• Community shortcuts: available\n" +
+                    "Privacy: no message/member/channel/server scraping and no telemetry.",
             )
         }
 
         commands.registerCommand("hgpg-help", "List HG PG commands and privacy notes") {
             CommandsAPI.CommandResult(
-                """
-                **HG PG · Command Guide**
-                • /hgpg-status — show module status.
-                • /hgpg-note — save, view, or clear a local note.
-                • /hgpg-fursona — format a fursona text card.
-                • /hgpg-network — inspect Android network status.
-                • /hgpg-theme — view or save a theme profile.
-                • /hgpg-community — show community shortcut guidance.
-
-                Notes stay in local plugin settings. HG PG does not scrape Discord content or send telemetry.
-                """.trimIndent(),
+                "**HG PG · Command Guide**\n" +
+                    "• /hgpg-status — show module status.\n" +
+                    "• /hgpg-note — save, view, or clear a local note.\n" +
+                    "• /hgpg-fursona — format a fursona text card.\n" +
+                    "• /hgpg-network — inspect Android network status.\n" +
+                    "• /hgpg-theme — view or save a theme profile.\n" +
+                    "• /hgpg-community — show community shortcut guidance.\n\n" +
+                    "Notes stay in local plugin settings. HG PG does not scrape Discord content or send telemetry.",
             )
         }
 
@@ -58,21 +53,21 @@ class HGPG : Plugin() {
                 ),
             ),
         ) { ctx ->
-            val text = ctx.getStringOrDefault("text", "").trim()
+            val text = toRealString(ctx.getStringOrDefault("text", "")).trim()
             when {
                 text.equals("clear", ignoreCase = true) -> {
                     settings.setString("local_note", "")
                     CommandsAPI.CommandResult("HG PG: saved local note cleared.")
                 }
-                text.isNotEmpty() -> {
-                    val saved = text.take(MAX_NOTE_LENGTH)
+                text.length > 0 -> {
+                    val saved = if (text.length > MAX_NOTE_LENGTH) text.substring(0, MAX_NOTE_LENGTH) else text
                     settings.setString("local_note", saved)
                     CommandsAPI.CommandResult("HG PG: note saved locally (${saved.length} characters).")
                 }
                 else -> {
-                    val note = settings.getString("local_note", "")
+                    val note = toRealString(settings.getString("local_note", ""))
                     CommandsAPI.CommandResult(
-                        if (note.isBlank()) "HG PG: no local note saved yet."
+                        if (isBlankCompat(note)) "HG PG: no local note saved yet."
                         else "**Your saved HG PG note**\n${escapeDiscordText(note)}",
                     )
                 }
@@ -92,13 +87,11 @@ class HGPG : Plugin() {
             val species = safeInlineText(ctx.getStringOrDefault("species", "Not specified"), 100, "Not specified")
             val colors = safeInlineText(ctx.getStringOrDefault("colors", "Not specified"), 120, "Not specified")
             CommandsAPI.CommandResult(
-                """
-                **FURSONA CARD**
-                **Name:** $name
-                **Species:** $species
-                **Palette:** $colors
-                **Made with:** HG PG · HyperGaruda Plugin
-                """.trimIndent(),
+                "**FURSONA CARD**\n" +
+                    "**Name:** $name\n" +
+                    "**Species:** $species\n" +
+                    "**Palette:** $colors\n" +
+                    "**Made with:** HG PG · HyperGaruda Plugin",
             )
         }
 
@@ -117,14 +110,19 @@ class HGPG : Plugin() {
                 ),
             ),
         ) { ctx ->
-            val requested = ctx.getStringOrDefault("profile", "").trim().lowercase()
-            val allowed = setOf("garuda", "midnight", "forest", "aurora")
-            if (requested.isBlank()) {
+            val requested = toRealString(ctx.getStringOrDefault("profile", "")).trim().lowercase(java.util.Locale.ROOT)
+            val currentProfile = toRealString(settings.getString("theme_profile", "garuda"))
+            if (isBlankCompat(requested)) {
                 CommandsAPI.CommandResult(
-                    "Current HG PG theme profile: **${settings.getString("theme_profile", "garuda")}**. " +
+                    "Current HG PG theme profile: **$currentProfile**. " +
                         "Choose garuda, midnight, forest, or aurora. This saves a profile preference; it does not recolor Discord globally yet.",
                 )
-            } else if (requested !in allowed) {
+            } else if (
+                requested != "garuda" &&
+                requested != "midnight" &&
+                requested != "forest" &&
+                requested != "aurora"
+            ) {
                 CommandsAPI.CommandResult("Unknown profile. Choose: garuda, midnight, forest, aurora.")
             } else {
                 settings.setString("theme_profile", requested)
@@ -136,13 +134,10 @@ class HGPG : Plugin() {
 
         commands.registerCommand("hgpg-community", "Show furry community shortcut guidance") {
             CommandsAPI.CommandResult(
-                """
-                **HG PG · Community Shortcuts**
-                • Indonesia Furs
-                • Anthro Indonesia
-
-                Open each community through its verified official page or invite. HG PG does not scrape communities or automatically join servers.
-                """.trimIndent(),
+                "**HG PG · Community Shortcuts**\n" +
+                    "• Indonesia Furs\n" +
+                    "• Anthro Indonesia\n\n" +
+                    "Open each community through its verified official page or invite. HG PG does not scrape communities or automatically join servers.",
             )
         }
     }
@@ -152,18 +147,53 @@ class HGPG : Plugin() {
     }
 
     /**
-     * Converts user-provided values into safe, single-line display text.
-     * It neutralizes mentions and escapes common Discord markdown characters.
+     * Discord/Aliucord may return an obfuscated CharSequence wrapper (for example d0.d0.b)
+     * from APIs whose declared return type is String. Convert it via reflective CharSequence
+     * methods before calling Kotlin string extensions, which can crash with IntIterator casts.
      */
-    private fun safeInlineText(value: String, maxLength: Int, fallback: String): String {
-        val normalized = value.replace(Regex("""\s+"""), " ").trim().take(maxLength)
-        return escapeDiscordText(normalized.ifBlank { fallback })
+    private fun toRealString(value: Any?): String {
+        if (value == null) return ""
+        return try {
+            val charSequenceClass = CharSequence::class.java
+            val lengthMethod = charSequenceClass.getMethod("length")
+            val charAtMethod = charSequenceClass.getMethod("charAt", Integer.TYPE)
+            val length = (lengthMethod.invoke(value) as Int).coerceAtLeast(0)
+            val result = java.lang.StringBuilder(length)
+            var index = 0
+            while (index < length) {
+                result.append(charAtMethod.invoke(value, index) as Char)
+                index += 1
+            }
+            result.toString()
+        } catch (_: Throwable) {
+            try {
+                val toStringMethod = Any::class.java.getMethod("toString")
+                val rendered = toStringMethod.invoke(value)
+                val bytes = java.io.ByteArrayOutputStream()
+                java.io.PrintStream(bytes).use { stream -> stream.print(rendered) }
+                bytes.toString("UTF-8")
+            } catch (_: Throwable) {
+                ""
+            }
+        }
     }
 
-    /**
-     * Escape user text before placing it in a Discord markdown response.
-     * Newlines are preserved for local notes, but mentions and formatting syntax are neutralized.
-     */
+    private fun isBlankCompat(value: String): Boolean {
+        var index = 0
+        while (index < value.length) {
+            if (!Character.isWhitespace(value[index])) return false
+            index += 1
+        }
+        return true
+    }
+
+    private fun safeInlineText(value: Any?, maxLength: Int, fallback: String): String {
+        val concrete = toRealString(value)
+        val normalized = concrete.replace(Regex("""\s+"""), " ").trim()
+        val limited = if (normalized.length > maxLength) normalized.substring(0, maxLength) else normalized
+        return escapeDiscordText(if (isBlankCompat(limited)) fallback else limited)
+    }
+
     private fun escapeDiscordText(value: String): String = buildString(value.length) {
         for (character in value) {
             when (character) {
