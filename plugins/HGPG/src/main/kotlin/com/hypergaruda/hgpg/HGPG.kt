@@ -31,6 +31,22 @@ class HGPG : Plugin() {
             )
         }
 
+        commands.registerCommand("hgpg-help", "List HG PG commands and privacy notes") {
+            CommandsAPI.CommandResult(
+                """
+                **HG PG · Command Guide**
+                • /hgpg-status — show module status.
+                • /hgpg-note — save, view, or clear a local note.
+                • /hgpg-fursona — format a fursona text card.
+                • /hgpg-network — inspect Android network status.
+                • /hgpg-theme — view or save a theme profile.
+                • /hgpg-community — show community shortcut guidance.
+
+                Notes stay in local plugin settings. HG PG does not scrape Discord content or send telemetry.
+                """.trimIndent(),
+            )
+        }
+
         commands.registerCommand(
             "hgpg-note",
             "Save, view, or clear your private local note",
@@ -57,7 +73,7 @@ class HGPG : Plugin() {
                     val note = settings.getString("local_note", "")
                     CommandsAPI.CommandResult(
                         if (note.isBlank()) "HG PG: no local note saved yet."
-                        else "**Your saved HG PG note**\n$note",
+                        else "**Your saved HG PG note**\n${escapeDiscordText(note)}",
                     )
                 }
             }
@@ -72,9 +88,9 @@ class HGPG : Plugin() {
                 Utils.createCommandOption(ApplicationCommandType.STRING, "colors", "Main colors or palette"),
             ),
         ) { ctx ->
-            val name = ctx.getStringOrDefault("name", "Unnamed fursona").take(80)
-            val species = ctx.getStringOrDefault("species", "Not specified").take(100)
-            val colors = ctx.getStringOrDefault("colors", "Not specified").take(120)
+            val name = safeInlineText(ctx.getStringOrDefault("name", "Unnamed fursona"), 80, "Unnamed fursona")
+            val species = safeInlineText(ctx.getStringOrDefault("species", "Not specified"), 100, "Not specified")
+            val colors = safeInlineText(ctx.getStringOrDefault("colors", "Not specified"), 120, "Not specified")
             CommandsAPI.CommandResult(
                 """
                 **FURSONA CARD**
@@ -135,6 +151,39 @@ class HGPG : Plugin() {
         patcher.unpatchAll()
     }
 
+    /**
+     * Converts user-provided values into safe, single-line display text.
+     * It neutralizes mentions and escapes common Discord markdown characters.
+     */
+    private fun safeInlineText(value: String, maxLength: Int, fallback: String): String {
+        val normalized = value.replace(Regex("""\s+"""), " ").trim().take(maxLength)
+        return escapeDiscordText(normalized.ifBlank { fallback })
+    }
+
+    /**
+     * Escape user text before placing it in a Discord markdown response.
+     * Newlines are preserved for local notes, but mentions and formatting syntax are neutralized.
+     */
+    private fun escapeDiscordText(value: String): String = buildString(value.length) {
+        for (character in value) {
+            when (character) {
+                '@' -> append("@\u200B")
+                '\\' -> append("\\\\")
+                '*' -> append("\\*")
+                '_' -> append("\\_")
+                '~' -> append("\\~")
+                '|' -> append("\\|")
+                '[' -> append("\\[")
+                ']' -> append("\\]")
+                '(' -> append("\\(")
+                ')' -> append("\\)")
+                '<' -> append("\\<")
+                '>' -> append("\\>")
+                else -> if (character.code == 96) append("\\u0060") else append(character)
+            }
+        }
+    }
+
     private fun networkSummary(context: Context): String {
         val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
             ?: return "HG PG: Android did not provide a ConnectivityManager."
@@ -155,6 +204,7 @@ class HGPG : Plugin() {
             ?: return "HG PG network status: network capabilities are unavailable."
 
         val transport = when {
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "VPN (underlying transport may be hidden)"
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular/mobile data"
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"

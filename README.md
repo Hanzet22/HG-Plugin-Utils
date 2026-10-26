@@ -5,13 +5,14 @@ A privacy-conscious Aliucord plugin toolkit, built with Kotlin and compiled thro
 ## Current MVP
 
 - **Local utility notes:** save, view, and clear a private note in Aliucord plugin settings.
-- **Fursona card generator:** format a shareable text card from details supplied by the user.
-- **Network diagnostics:** report the device's current network transport and Android's validated-network status. This is a status check, not an internet speed test or a latency measurement.
+- **Fursona card generator:** format a shareable text card from details supplied by the user. User-entered display text is escaped to neutralize mentions and Markdown formatting.
+- **Network diagnostics:** report the device's current network transport (including VPN detection) and Android's validated-network status. This is a status check, not an internet speed test or a latency measurement.
 - **Theme profiles:** save a named visual preference profile and preview it in the plugin settings page. This initial version does not recolor Discord's entire interface; full UI theme application requires a separately verified UI integration.
 - **Community shortcuts:** show community names and a reminder to use verified official links. No scraping or automatic actions.
 
 ## Commands
 
+- `/hgpg-help` — list commands and privacy notes.
 - `/hgpg-status` — plugin overview.
 - `/hgpg-note` — show the saved note; pass text to save it, or `clear` to remove it.
 - `/hgpg-fursona` — create a text card using the provided name, species, and colors.
