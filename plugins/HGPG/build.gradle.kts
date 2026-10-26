@@ -1,9 +1,15 @@
-version = "0.8.2"
+version = "0.9.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.9.0
+        * Added theme-aware in-app notification bubbles with fade-and-slide entry, timed fade-out, and tap-to-dismiss behavior.
+        * Added staggered fade-in text transitions to HG PG-owned panel and settings UI without animating input fields or Discord chat text.
+        * Animated the Ambient Light slider entrance, value feedback, touch tracking, and saved-value notification.
+        * Unified UI feedback with native Android view animations and cleaned up active bubbles when HG PG stops.
+
         # 0.8.2
         * Added theme-matched ambient edge lighting with softly moving radial glows and a breathing light pulse.
         * Added persistent Ambient Light toggle and 0–100% intensity control in HG PG settings.

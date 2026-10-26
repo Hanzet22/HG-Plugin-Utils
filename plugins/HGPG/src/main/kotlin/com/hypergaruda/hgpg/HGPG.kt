@@ -14,6 +14,11 @@ class HGPG : Plugin() {
     override fun start(context: Context) {
         settingsTab = com.aliucord.entities.Plugin.SettingsTab(HGPGSettingsPage::class.java)
             .withArgs(settings)
+        try {
+            HGPGInAppBubble.start(settings)
+        } catch (error: Throwable) {
+            android.util.Log.e("HGPG", "In-app notification bubble could not initialize", error)
+        }
 
         try {
             HGPGGlobalMotionOverlay.start(settings)
@@ -69,6 +74,7 @@ class HGPG : Plugin() {
         activityCallbacks?.let { app?.unregisterActivityLifecycleCallbacks(it) }
         activityCallbacks = null
         HGPGGlobalMotionOverlay.stop()
+        HGPGInAppBubble.stop()
         HGPGOverlay.dismiss()
         patcher.unpatchAll()
         HGPGGlobalThemeEngine.stop()
