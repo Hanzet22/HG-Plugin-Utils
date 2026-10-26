@@ -2,7 +2,7 @@
 
 A privacy-conscious Aliucord utility plugin, built with Kotlin and compiled through GitHub Actions.
 
-## Current plugin version: 0.8.0 — Animated App Backdrop & Motion
+## Current plugin version: 0.9.0 — Native UI/UX Motion
 
 HG PG includes six custom animated themes, a **built-in app-wide resource color engine**, an **animated background on the native Aliucord screen root**, an **app-wide motion engine**, and a **high-tech rendering layer**. The selected theme paints a moving native `Drawable` backdrop behind the screen content; screen/dialog entrances replay when resumed, and press/release feedback is more pronounced. It also adds WebView load transitions, character-by-character reveals for short non-input text updates, and temporary hardware-accelerated layers. On Android 12+, supported WebViews can use a brief blur-to-sharp RenderEffect transition.
 
@@ -28,7 +28,7 @@ HG PG uses an **in-app floating panel instead of slash commands**. Tap the round
 - **Community Shortcuts** — shows Indonesia Furs and Anthro Indonesia as community names and recommends using verified official pages or invites.
 - **Privacy & About** — explains the plugin's local-first behavior.
 
-The launcher appears above Aliucord's normal content and remains available while you navigate the app. It has entrance/press feedback; the panel scales and fades in/out; tiles animate on interaction. The launcher is inserted into Aliucord's own content view. It does **not** request Android's “draw over other apps” permission.
+The launcher appears above Aliucord's normal content and remains available while you navigate the app. It has entrance/press feedback; the panel and text use staggered fade-in transitions; the panel fades/scales out when closed; and the Ambient Light slider animates into place and responds to touch. Action feedback appears as theme-aware in-app notification bubbles that slide/fade in, fade out automatically, and can be tapped to dismiss. These bubbles are added to Aliucord's own content view and do **not** request Android's “draw over other apps” permission.
 
 ## Privacy and safety
 
