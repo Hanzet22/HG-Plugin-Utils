@@ -1,9 +1,12 @@
-version = "0.2.0"
+version = "0.2.1"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.2.1
+        * Fixed a crash when opening HG PG settings by initializing the base SettingsPage first.
+
         # 0.2.0
         * Added an in-plugin command guide.
         * Escaped user-provided display text to neutralize mentions and markdown.

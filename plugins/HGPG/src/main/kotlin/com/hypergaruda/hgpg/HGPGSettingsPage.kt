@@ -9,6 +9,9 @@ import com.aliucord.fragments.SettingsPage
 
 class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage() {
     override fun onViewBound(view: View) {
+        // SettingsPage initializes its internal layout here. This must run before addView().
+        super.onViewBound(view)
+
         val context = view.context
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
