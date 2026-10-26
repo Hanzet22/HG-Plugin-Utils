@@ -1,9 +1,16 @@
-version = "0.10.0"
+version = "0.11.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.11.0
+        * Added Morph Glass, Liquid Glass, and 3D UI materials for HG PG-owned surfaces and controls.
+        * Added four display colour presets: IPS, AMOLED, AMOLED+, and Super AMOLED.
+        * Enabled Android 12+ background blur for Liquid Glass when the device reports support, with a readable non-blur fallback.
+        * Added Glass & Display Studio to the floating panel and plugin settings.
+        * Kept glass material and display colour tuning independent from the six existing animated colour themes.
+
         # 0.10.0
         * Added launcher enable/disable control and a reset-position action in HG PG settings.
         * Added validated local JSON backup export/import through the clipboard, with overwrite confirmation and range/theme validation.

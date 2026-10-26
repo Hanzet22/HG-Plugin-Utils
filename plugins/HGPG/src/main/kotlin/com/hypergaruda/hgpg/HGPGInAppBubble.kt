@@ -51,11 +51,7 @@ internal object HGPGInAppBubble {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(activity, 13), dp(activity, 11), dp(activity, 14), dp(activity, 11))
-                background = GradientDrawable().apply {
-                    cornerRadius = 17f * density
-                    setColor(theme.surfaceRaised)
-                    setStroke(dp(activity, 1), theme.border)
-                }
+                background = HGPGGlassUI.background(theme, cornerScale = 0.18f, panelSurface = false)
                 alpha = 0f
                 translationY = -dp(activity, 22).toFloat()
                 scaleX = 0.97f

@@ -26,7 +26,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding((20 * density).toInt(), (20 * density).toInt(), (20 * density).toInt(), (20 * density).toInt())
-            background = HGPGAnimatedDrawable(activeTheme, cornerScale = 0.04f)
+            background = HGPGGlassUI.background(activeTheme, cornerScale = 0.04f, panelSurface = false, animatedUnderlay = true)
             alpha = 0f
             translationY = (10 * density).toFloat()
         }
@@ -39,7 +39,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
         })
 
         container.addView(TextView(context).apply {
-            text = "Six built-in animated themes. HG PG also recolors supported Aliucord/Discord app resources directly; no separate theme plugin or JSON import is needed. Some hard-coded elements may remain unchanged."
+            text = "Six animated colour themes plus Morph Glass, Liquid Glass, and 3D UI. Four display colour presets tune HG PG surfaces and highlights; they do not change the phone's physical display mode. Supported Aliucord/Discord resources are recoloured directly."
             textSize = 14f
             setTextColor(activeTheme.muted)
             setPadding(0, (10 * density).toInt(), 0, (16 * density).toInt())
@@ -242,7 +242,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
                     HGPGHighTechRenderer.setTheme(theme)
                     current.text = "Current native theme: " + theme.name
                     current.setTextColor(theme.text)
-                    container.background = HGPGAnimatedDrawable(theme, cornerScale = 0.04f)
+                    container.background = HGPGGlassUI.background(theme, cornerScale = 0.04f, panelSurface = false, animatedUnderlay = true)
                     HGPGOverlay.refreshTheme(pluginSettings)
                     refreshButtons()
                     HGPGGlobalThemeEngine.refreshActivity(context)
@@ -260,6 +260,26 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
             })
         }
         refreshButtons()
+        val glassSettingsButton = Button(context).apply {
+            text = "🫧  Customize Glass & Display"
+            isAllCaps = false
+            textSize = 14f
+            minHeight = (48 * density).toInt()
+            setTextColor(activeTheme.text)
+            background = HGPGGlassUI.background(activeTheme, cornerScale = 0.14f)
+            setOnClickListener {
+                (context as? Activity)?.let { activity ->
+                    HGPGGlassUI.showSettingsDialog(activity, pluginSettings, activeTheme) {
+                        val refreshedTheme = HGPGThemes.get(toRealString(pluginSettings.getString("theme_profile", "garuda")))
+                        container.background = HGPGGlassUI.background(refreshedTheme, cornerScale = 0.04f, panelSurface = false, animatedUnderlay = true)
+                        refreshButtons()
+                    }
+                }
+            }
+        }
+        container.addView(glassSettingsButton, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = (14 * density).toInt()
+        })
         addView(container)
         container.animate().alpha(1f).translationY(0f).setDuration(280L)
             .setInterpolator(DecelerateInterpolator()).start()

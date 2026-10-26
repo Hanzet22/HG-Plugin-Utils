@@ -71,7 +71,7 @@ internal object HGPGOverlay {
                     gravity = Gravity.CENTER
                     setTextColor(Color.WHITE)
                     contentDescription = "Drag to move HG PG button; tap to open the control panel"
-                    background = HGPGAnimatedDrawable(HGPGThemes.get(realString(settings.getString("theme_profile", "garuda"))), cornerScale = 0.5f)
+                    background = HGPGGlassUI.background(HGPGThemes.get(realString(settings.getString("theme_profile", "garuda"))), cornerScale = 0.5f)
                     elevation = dp(activity, 8).toFloat()
                     isClickable = true
                     isFocusable = true
@@ -230,11 +230,12 @@ internal object HGPGOverlay {
 
     /** Refresh existing launcher(s) immediately after a theme is selected. */
     fun refreshTheme(settings: SettingsAPI) {
+        HGPGGlassUI.start(settings)
         val selected = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda")))
         HGPGInAppBubble.setTheme(selected)
         launchers.forEach { (activity, button) ->
             if (!activity.isFinishing && !activity.isDestroyed) {
-                button.background = HGPGAnimatedDrawable(selected, cornerScale = 0.5f)
+                button.background = HGPGGlassUI.background(selected, cornerScale = 0.5f)
                 button.animate().cancel()
                 button.animate().scaleX(1.12f).scaleY(1.12f).setDuration(140)
                     .withEndAction {
@@ -243,7 +244,7 @@ internal object HGPGOverlay {
                     }.start()
             }
         }
-        panelRoot?.background = HGPGAnimatedDrawable(selected, cornerScale = 0.06f)
+        panelRoot?.background = HGPGGlassUI.background(selected, cornerScale = 0.06f, panelSurface = true, animatedUnderlay = true)
     }
 
     private fun showPanel(activity: Activity, settings: SettingsAPI) {
@@ -255,7 +256,7 @@ internal object HGPGOverlay {
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(activity, 16), dp(activity, 16), dp(activity, 16), dp(activity, 16))
-            background = HGPGAnimatedDrawable(theme, cornerScale = 0.06f)
+            background = HGPGGlassUI.background(theme, cornerScale = 0.06f, panelSurface = true, animatedUnderlay = true)
             alpha = 0f
             scaleX = 0.94f
             scaleY = 0.94f
@@ -307,6 +308,9 @@ internal object HGPGOverlay {
         addCard(options, "🎨  Animated Theme Garage", "Six custom palettes with their own moving backdrop and launcher animation.", theme) {
             dismissPanelAnimated { showThemes(activity, settings) }
         }
+        addCard(options, "🫧  Glass & Display Studio", "Morph Glass, Liquid Glass, 3D UI, and four display colour profiles.", theme) {
+            dismissPanelAnimated { HGPGGlassUI.showSettingsDialog(activity, settings, theme) }
+        }
         addCard(options, "🌐  Community Shortcuts", "Open verified Indonesia Furs community pages.", theme) {
             dismissPanelAnimated { showCommunity(activity) }
         }
@@ -348,6 +352,7 @@ internal object HGPGOverlay {
             val height = minOf(activity.resources.displayMetrics.heightPixels - dp(activity, 80), dp(activity, 760)).coerceAtLeast(dp(activity, 380))
             setLayout(width, height)
             setGravity(Gravity.CENTER)
+            HGPGGlassUI.applyWindowMaterial(this, activity, 0.55f)
         }
         root.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(230)
             .setInterpolator(DecelerateInterpolator()).start()
@@ -684,7 +689,7 @@ internal object HGPGOverlay {
         val tile = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(ctx, 14), dp(ctx, 12), dp(ctx, 14), dp(ctx, 12))
-            background = shape(ctx, theme.surfaceRaised, 15f, theme.border)
+            background = HGPGGlassUI.background(theme, cornerScale = 0.16f, panelSurface = true)
             isClickable = true; isFocusable = true
             alpha = 0f
             translationY = dp(ctx, 9).toFloat()

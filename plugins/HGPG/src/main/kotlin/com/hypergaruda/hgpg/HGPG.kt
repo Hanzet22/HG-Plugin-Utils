@@ -15,6 +15,11 @@ class HGPG : Plugin() {
         settingsTab = com.aliucord.entities.Plugin.SettingsTab(HGPGSettingsPage::class.java)
             .withArgs(settings)
         try {
+            HGPGGlassUI.start(settings)
+        } catch (error: Throwable) {
+            android.util.Log.e("HGPG", "Glass UI preferences could not initialize", error)
+        }
+        try {
             HGPGInAppBubble.start(settings)
         } catch (error: Throwable) {
             android.util.Log.e("HGPG", "In-app notification bubble could not initialize", error)
