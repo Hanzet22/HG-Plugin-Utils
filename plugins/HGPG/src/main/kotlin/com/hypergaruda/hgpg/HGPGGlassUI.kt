@@ -14,11 +14,8 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
-import android.os.Build
 import android.view.View
 import android.view.ViewGroup
-import android.view.Window
-import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
@@ -30,7 +27,7 @@ import kotlin.math.min
 
 internal enum class HGPGGlassStyle(val key: String, val title: String, val description: String) {
     MORPH_GLASS("morph_glass", "Morph Glass", "Soft, layered surfaces with rounded contours and shifting-looking highlights."),
-    LIQUID_GLASS("liquid_glass", "Liquid Glass", "Translucent, glossy controls with optional Android window blur."),
+    LIQUID_GLASS("liquid_glass", "Liquid Glass", "Layered translucent surfaces with plugin-rendered gloss, refraction bands, and highlights."),
     THREE_D_UI("3d_ui", "3D UI", "Beveled edges, depth shading, and stronger press-friendly surfaces.");
 
     companion object {
@@ -52,10 +49,10 @@ internal enum class HGPGDisplayProfile(val key: String, val title: String, val d
 }
 
 /**
- * Native glass-inspired styling for HG PG-owned controls.
+ * Plugin-owned material rendering for HG PG controls.
  *
- * The display profile is a visual tuning preset, not hardware detection or a
- * way to change the device's physical display mode / color space.
+ * All material styles are drawn by HG PG; no platform blur or vendor UI
+ * effect is required. Display profiles tune plugin surface colours only.
  */
 internal object HGPGGlassUI {
     @Volatile private var activeStyle = HGPGGlassStyle.LIQUID_GLASS
@@ -80,29 +77,22 @@ internal object HGPGGlassUI {
         }
     }
 
-    /** Apply real Android cross-window background blur when Liquid Glass is selected and supported. */
-    fun applyWindowMaterial(window: Window?, context: Context, dimFallback: Float = 0.55f) {
-        val target = window ?: return
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && activeStyle == HGPGGlassStyle.LIQUID_GLASS) {
-                val manager = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
-                val blurSupported = manager?.isCrossWindowBlurEnabled == true
-                if (blurSupported) {
-                    target.setBackgroundBlurRadius(dp(context, 26))
-                    target.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-                    target.setDimAmount(0.28f)
-                } else {
-                    target.setBackgroundBlurRadius(0)
-                    target.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-                    target.setDimAmount(dimFallback)
-                }
-            } else {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) target.setBackgroundBlurRadius(0)
-                target.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-                target.setDimAmount(dimFallback)
-            }
-        } catch (_: Throwable) {
-            // Blur is an enhancement only; leave the normal tinted material as the fallback.
+    /** Apply HG PG's own material skin to an Aliucord plugin dialog. */
+    fun styleDialog(dialog: AlertDialog, context: Context, theme: HGPGTheme) {
+        dialog.window?.setBackgroundDrawable(
+            background(theme, cornerScale = 0.055f, panelSurface = true)
+        )
+        dialog.findViewById<TextView>(androidx.appcompat.R.id.alertTitle)?.setTextColor(theme.text)
+        dialog.findViewById<TextView>(android.R.id.message)?.setTextColor(theme.muted)
+        val buttons = listOf(
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE),
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE),
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+        )
+        buttons.filterNotNull().forEach { button ->
+            button.setTextColor(theme.text)
+            button.background = background(theme, cornerScale = 0.14f, panelSurface = false)
+            button.setPadding(dp(context, 12), button.paddingTop, dp(context, 12), button.paddingBottom)
         }
     }
 
@@ -195,6 +185,7 @@ internal object HGPGGlassUI {
             .setNegativeButton("Cancel", null)
             .create()
         dialog.setOnShowListener {
+            styleDialog(dialog, activity, theme)
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val styleIndex = styleIds[styleGroup.checkedRadioButtonId]
                 val displayIndex = displayIds[displayGroup.checkedRadioButtonId]
@@ -216,19 +207,9 @@ internal object HGPGGlassUI {
     private fun readSetting(value: Any?): String {
         if (value == null) return ""
         return try {
-            val type = CharSequence::class.java
-            val length = type.getMethod("length").invoke(value) as Int
-            val charAt = type.getMethod("charAt", Integer.TYPE)
-            val out = StringBuilder(length.coerceAtLeast(0))
-            var index = 0
-            while (index < length) {
-                out.append(charAt.invoke(value, index) as Char)
-                index++
-            }
-            out.toString()
+            value.toString()
         } catch (_: Throwable) {
-            try { Any::class.java.getMethod("toString").invoke(value)?.toString() ?: "" }
-            catch (_: Throwable) { "" }
+            ""
         }
     }
 
@@ -265,15 +246,18 @@ private class HGPGGlassDrawable(
                 rect.right, rect.bottom), radius, radius, paint)
         }
 
+        // Translucent surfaces let the plugin-drawn underlay show through.
+        // 3D UI stays denser; Morph and Liquid have separate opacity ranges.
         val fillAlpha = when {
-            panelSurface && style == HGPGGlassStyle.LIQUID_GLASS -> 154
-            panelSurface && style == HGPGGlassStyle.MORPH_GLASS -> 176
-            panelSurface -> 221
-            style == HGPGGlassStyle.LIQUID_GLASS -> 223
-            else -> 238
+            panelSurface && style == HGPGGlassStyle.LIQUID_GLASS -> 112
+            panelSurface && style == HGPGGlassStyle.MORPH_GLASS -> 154
+            panelSurface -> 216
+            style == HGPGGlassStyle.LIQUID_GLASS -> 142
+            style == HGPGGlassStyle.MORPH_GLASS -> 178
+            else -> 232
         }
         paint.shader = LinearGradient(
-            rect.left, rect.top, rect.right * 0.84f, rect.bottom,
+            rect.left, rect.top, rect.left + width * 0.84f, rect.bottom,
             intArrayOf(
                 withAlpha(blend(Color.WHITE, base, if (style == HGPGGlassStyle.THREE_D_UI) 0.12f else 0.23f), scaled(fillAlpha)),
                 withAlpha(base, scaled(fillAlpha)),
@@ -321,8 +305,20 @@ private class HGPGGlassDrawable(
             intArrayOf(withAlpha(Color.WHITE, scaled(92)), withAlpha(theme.accent, scaled(48)), withAlpha(Color.WHITE, 0)),
             null, Shader.TileMode.CLAMP)
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = maxOf(1f, h * 0.004f)
+        paint.strokeWidth = maxOf(1f, h * 0.008f)
         canvas.drawPath(wave, paint)
+        paint.shader = null
+        // A second soft contour makes Morph Glass distinct from the Liquid profile.
+        val lowerWave = Path().apply {
+            moveTo(r.left + w * 0.06f, r.top + h * 0.72f)
+            cubicTo(r.left + w * 0.30f, r.top + h * 0.52f, r.left + w * 0.56f, r.top + h * 0.88f,
+                r.right - w * 0.07f, r.top + h * 0.67f)
+        }
+        paint.shader = LinearGradient(r.left, r.top + h * 0.55f, r.right, r.bottom,
+            intArrayOf(withAlpha(theme.secondary, scaled(38)), withAlpha(Color.WHITE, scaled(20)), withAlpha(theme.accent, 0)),
+            null, Shader.TileMode.CLAMP)
+        paint.strokeWidth = maxOf(1f, h * 0.006f)
+        canvas.drawPath(lowerWave, paint)
         paint.shader = null
     }
 

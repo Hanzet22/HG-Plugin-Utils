@@ -20,7 +20,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
         super.onViewBound(view)
         val context = view.context
         val density = context.resources.displayMetrics.density
-        val activeTheme = HGPGThemes.get(toRealString(pluginSettings.getString("theme_profile", "garuda")))
+        var activeTheme = HGPGThemes.get(toRealString(pluginSettings.getString("theme_profile", "garuda")))
         var activeId = activeTheme.id
 
         val container = LinearLayout(context).apply {
@@ -83,11 +83,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
             text = "Reset Floating Button Position"
             isAllCaps = false
             setTextColor(activeTheme.text)
-            background = GradientDrawable().apply {
-                cornerRadius = 12f * density
-                setColor(activeTheme.surfaceRaised)
-                setStroke((1.2f * density).toInt().coerceAtLeast(1), activeTheme.border)
-            }
+            background = HGPGGlassUI.background(activeTheme, cornerScale = 0.14f, panelSurface = false)
             setOnClickListener {
                 (context as? Activity)?.let { activity ->
                     HGPGOverlay.resetLauncherPosition(activity, pluginSettings)
@@ -219,11 +215,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
                 val selected = theme.id == activeId
                 button.text = (if (selected) "✓ ACTIVE  ·  " else "APPLY  ·  ") + theme.name
                 button.setTextColor(if (selected) Color.BLACK else theme.text)
-                button.background = GradientDrawable().apply {
-                    cornerRadius = 12f * density
-                    setColor(if (selected) theme.accent else theme.surfaceRaised)
-                    setStroke((1.2f * density).toInt().coerceAtLeast(1), if (selected) theme.accent else theme.border)
-                }
+                button.background = HGPGGlassUI.background(theme, cornerScale = 0.14f, panelSurface = false)
             }
         }
 
@@ -234,6 +226,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
                 minHeight = (48 * density).toInt()
                 setOnClickListener {
                     activeId = theme.id
+                    activeTheme = theme
                     pluginSettings.setString("theme_profile", theme.id)
                     HGPGGlobalThemeEngine.apply(theme)
                     HGPGMotionEngine.setTheme(theme)
@@ -260,7 +253,8 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
             })
         }
         refreshButtons()
-        val glassSettingsButton = Button(context).apply {
+        lateinit var glassSettingsButton: Button
+        glassSettingsButton = Button(context).apply {
             text = "🫧  Customize Glass & Display"
             isAllCaps = false
             textSize = 14f
@@ -271,7 +265,10 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
                 (context as? Activity)?.let { activity ->
                     HGPGGlassUI.showSettingsDialog(activity, pluginSettings, activeTheme) {
                         val refreshedTheme = HGPGThemes.get(toRealString(pluginSettings.getString("theme_profile", "garuda")))
+                        activeTheme = refreshedTheme
                         container.background = HGPGGlassUI.background(refreshedTheme, cornerScale = 0.04f, panelSurface = false, animatedUnderlay = true)
+                        glassSettingsButton.background = HGPGGlassUI.background(refreshedTheme, cornerScale = 0.14f, panelSurface = false)
+                        glassSettingsButton.setTextColor(refreshedTheme.text)
                         refreshButtons()
                     }
                 }

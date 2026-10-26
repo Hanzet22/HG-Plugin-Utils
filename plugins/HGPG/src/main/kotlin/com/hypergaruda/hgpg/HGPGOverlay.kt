@@ -352,7 +352,10 @@ internal object HGPGOverlay {
             val height = minOf(activity.resources.displayMetrics.heightPixels - dp(activity, 80), dp(activity, 760)).coerceAtLeast(dp(activity, 380))
             setLayout(width, height)
             setGravity(Gravity.CENTER)
-            HGPGGlassUI.applyWindowMaterial(this, activity, 0.55f)
+            // The panel is fully painted by HG PG; no OS blur dependency is used.
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            setDimAmount(0.42f)
         }
         root.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(230)
             .setInterpolator(DecelerateInterpolator()).start()
@@ -381,23 +384,29 @@ internal object HGPGOverlay {
     }
 
     private fun showNote(activity: Activity, settings: SettingsAPI) {
+        val theme = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda")))
         val field = EditText(activity).apply {
             hint = "Write a private local note…"
-            setTextColor(FG); setHintTextColor(MUTED)
+            setTextColor(theme.text)
+            setHintTextColor(theme.muted)
             setText(realString(settings.getString("local_note", "")))
+            background = HGPGGlassUI.background(theme, cornerScale = 0.10f, panelSurface = false)
+            setPadding(dp(activity, 12), dp(activity, 10), dp(activity, 12), dp(activity, 10))
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
             minLines = 4; maxLines = 8; gravity = Gravity.TOP
         }
         val box = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(activity, 18), dp(activity, 4), dp(activity, 18), 0)
+            setPadding(dp(activity, 18), dp(activity, 8), dp(activity, 18), dp(activity, 8))
+            background = HGPGGlassUI.background(theme, cornerScale = 0.06f, panelSurface = true)
             addView(field, LinearLayout.LayoutParams(-1, dp(activity, 150)))
         }
-        val dialog = AlertDialog.Builder(activity).setTitle("Private Notes").setView(box)
+        val dialog = AlertDialog.Builder(activity).setTitle("HG PG · Private Notes").setView(box)
             .setPositiveButton("Save", null)
             .setNeutralButton("Clear", null)
             .setNegativeButton("Close", null).create()
         dialog.setOnShowListener {
+            HGPGGlassUI.styleDialog(dialog, activity, theme)
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val raw = field.text?.toString()?.trim().orEmpty()
                 val saved = if (raw.length > MAX_NOTE) raw.substring(0, MAX_NOTE) else raw
@@ -658,30 +667,90 @@ internal object HGPGOverlay {
     }
 
     private fun showThemes(activity: Activity, settings: SettingsAPI) {
-        val themes = HGPGThemes.all
+        if (activity.isFinishing || activity.isDestroyed) return
         val active = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda")))
-        val labels = themes.map { theme ->
-            (if (theme.id == active.id) "✓  " else "◉  ") + theme.name + " — " + theme.subtitle
-        }.toTypedArray()
-        val dialog = AlertDialog.Builder(activity).setTitle("HG PG · Animated Theme Garage")
-            .setMessage("Choose a built-in visual system. HG PG applies supported app-wide color resources itself; no separate theme plugin or JSON import is needed.")
-            .setItems(labels) { d, which ->
-                val chosen = themes[which]
-                settings.setString("theme_profile", chosen.id)
-                HGPGGlobalThemeEngine.apply(chosen)
-                HGPGMotionEngine.setTheme(chosen)
-                HGPGHighTechRenderer.setTheme(chosen)
-                refreshTheme(settings)
-                toast(activity, "Native app theme applied: " + chosen.name)
-                d.dismiss()
-                activity.window?.decorView?.postDelayed({
-                    HGPGGlobalThemeEngine.refreshActivity(activity)
-                }, 250L)
-            }.setNegativeButton("Close", null).create()
-        dialog.setOnShowListener {
-            dialog.setMessage("Applies to supported Aliucord/Discord resource colors and HG PG's animated panel. Some hard-coded or third-party elements may remain unchanged.")
+        val scroll = ScrollView(activity)
+        val content = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(activity, 16), dp(activity, 10), dp(activity, 16), dp(activity, 12))
+            background = HGPGGlassUI.background(active, cornerScale = 0.045f, panelSurface = true, animatedUnderlay = true)
         }
+        content.addView(TextView(activity).apply {
+            text = "ANIMATED THEME GARAGE"
+            textSize = 12f
+            letterSpacing = 0.12f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(active.accent)
+            setPadding(dp(activity, 2), dp(activity, 4), dp(activity, 2), dp(activity, 4))
+        })
+        content.addView(TextView(activity).apply {
+            text = "Pick a visual system. Each card previews its own HG PG palette and motion identity."
+            textSize = 13f
+            setTextColor(active.muted)
+            setPadding(dp(activity, 2), 0, dp(activity, 2), dp(activity, 12))
+        })
+        val dialog = AlertDialog.Builder(activity)
+            .setTitle("HG PG · Animated Theme Garage")
+            .setView(scroll)
+            .setNegativeButton("Close", null)
+            .create()
+        HGPGThemes.all.forEach { theme ->
+            val selected = theme.id == active.id
+            val card = LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(activity, 14), dp(activity, 11), dp(activity, 14), dp(activity, 11))
+                background = HGPGGlassUI.background(theme, cornerScale = 0.14f, panelSurface = false)
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Apply ${theme.name} theme"
+                setOnClickListener {
+                    settings.setString("theme_profile", theme.id)
+                    HGPGGlobalThemeEngine.apply(theme)
+                    HGPGMotionEngine.setTheme(theme)
+                    HGPGGlobalMotionOverlay.setTheme(theme)
+                    HGPGInAppBubble.setTheme(theme)
+                    HGPGHighTechRenderer.setTheme(theme)
+                    refreshTheme(settings)
+                    dialog.dismiss()
+                    toast(activity, "Theme applied: " + theme.name)
+                    activity.window?.decorView?.postDelayed({
+                        if (!activity.isFinishing && !activity.isDestroyed) {
+                            HGPGGlobalThemeEngine.refreshActivity(activity)
+                        }
+                    }, 250L)
+                }
+            }
+            card.addView(TextView(activity).apply {
+                text = (if (selected) "✓  ACTIVE  ·  " else "◈  APPLY  ·  ") + theme.name
+                textSize = 15f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(theme.text)
+            })
+            card.addView(TextView(activity).apply {
+                text = theme.subtitle
+                textSize = 12f
+                setTextColor(theme.muted)
+                setPadding(0, dp(activity, 4), 0, 0)
+            })
+            content.addView(card, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = dp(activity, 9)
+            })
+            card.alpha = 0f
+            card.translationY = dp(activity, 7).toFloat()
+            card.postDelayed({
+                if (card.isAttachedToWindow) {
+                    card.animate().alpha(1f).translationY(0f).setDuration(210L)
+                        .setInterpolator(DecelerateInterpolator()).start()
+                }
+            }, content.childCount * 32L)
+        }
+        scroll.addView(content, ViewGroup.LayoutParams(-1, -2))
+        dialog.setOnShowListener { HGPGGlassUI.styleDialog(dialog, activity, active) }
         dialog.show()
+        dialog.window?.setLayout(
+            minOf(activity.resources.displayMetrics.widthPixels - dp(activity, 24), dp(activity, 520)).coerceAtLeast(dp(activity, 260)),
+            minOf(activity.resources.displayMetrics.heightPixels - dp(activity, 80), dp(activity, 760)).coerceAtLeast(dp(activity, 380))
+        )
     }
 
     private fun addCard(parent: LinearLayout, title: String, description: String, theme: HGPGTheme, click: () -> Unit) {

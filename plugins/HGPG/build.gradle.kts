@@ -1,9 +1,17 @@
-version = "0.11.0"
+version = "0.12.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.12.0
+        * Replaced Android window blur dependency with fully HG PG-rendered Morph Glass, Liquid Glass, and 3D UI materials.
+        * Fixed the animated overlay being moved above Discord controls when an activity resumed.
+        * Reduced material opacity and corrected gradient bounds so glass surfaces remain readable and visually distinct.
+        * Restyled Private Notes and dialog controls with plugin-rendered materials.
+        * Rebuilt Animated Theme Garage as a directly selectable, animated in-plugin theme gallery.
+        * Applied HG PG materials consistently to theme and settings controls.
+
         # 0.11.0
         * Added Morph Glass, Liquid Glass, and 3D UI materials for HG PG-owned surfaces and controls.
         * Added four display colour presets: IPS, AMOLED, AMOLED+, and Super AMOLED.

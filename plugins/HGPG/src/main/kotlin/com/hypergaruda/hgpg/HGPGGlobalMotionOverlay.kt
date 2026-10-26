@@ -87,7 +87,16 @@ internal object HGPGGlobalMotionOverlay {
                 old.setTheme(currentTheme)
                 old.setAmbientEnabled(ambientEnabled)
                 old.setAmbientIntensity(ambientIntensity)
-                old.bringToFront()
+                // Keep decorative rendering behind Discord's content tree.
+                // bringToFront() made the animation cover controls after activity resumes.
+                if (root.indexOfChild(old) != 0) {
+                    val params = old.layoutParams ?: ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    root.removeView(old)
+                    root.addView(old, 0, params)
+                }
                 old.invalidate()
                 return
             }
