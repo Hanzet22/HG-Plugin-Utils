@@ -1,9 +1,15 @@
-version = "0.3.0"
+version = "0.3.1"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.3.1
+        * Added drag-and-drop positioning for the floating HG launcher.
+        * Persisted launcher position as a normalized screen-relative location in plugin settings.
+        * Added button entrance/press feedback and animated panel opening, closing, and tile interaction.
+        * Kept the launcher within Aliucord's own view tree; no draw-over-other-apps permission is requested.
+
         # 0.3.0
         * Replaced slash commands with an in-app floating HG PG control panel.
         * Added panel actions for local notes, fursona cards, network diagnostics, accent presets, community guidance, and privacy.

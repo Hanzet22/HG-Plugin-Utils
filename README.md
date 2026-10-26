@@ -2,9 +2,9 @@
 
 A privacy-conscious Aliucord utility plugin, built with Kotlin and compiled through GitHub Actions.
 
-## Current version: 0.3.0 — Floating Control Panel
+## Current version: 0.3.1 — Draggable Animated Floating Panel
 
-HG PG now uses an **in-app floating panel instead of slash commands**. Tap the round **HG** launcher near the bottom-right of Aliucord to open it.
+HG PG now uses an **in-app floating panel instead of slash commands**. Tap the round **HG** launcher anywhere you place it in Aliucord to open it. Drag the launcher with your finger to move it; its normalized position is saved in plugin settings and restored later.
 
 ### Panel tools
 
@@ -15,7 +15,7 @@ HG PG now uses an **in-app floating panel instead of slash commands**. Tap the r
 - **Community Shortcuts** — shows Indonesia Furs and Anthro Indonesia as community names and recommends using verified official pages or invites.
 - **Privacy & About** — explains the plugin's local-first behavior.
 
-The launcher is inserted into Aliucord's own content view. It does **not** request Android's “draw over other apps” permission. Restart Aliucord after installing or updating version 0.3.0 so the activity hook is active.
+The launcher appears above Aliucord's normal content and remains available while you navigate the app. It has entrance/press feedback; the panel scales and fades in/out; tiles animate on interaction. The launcher is inserted into Aliucord's own content view. It does **not** request Android's “draw over other apps” permission. Restart Aliucord after installing or updating version 0.3.1 so the activity hook is active.
 
 ## Privacy and safety
 

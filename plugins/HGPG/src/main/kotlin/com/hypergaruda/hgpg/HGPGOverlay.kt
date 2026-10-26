@@ -14,6 +14,7 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.text.InputType
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.Window
 import android.view.ViewGroup
@@ -24,6 +25,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import android.view.animation.DecelerateInterpolator
+import kotlin.math.abs
 import androidx.appcompat.app.AlertDialog
 import com.aliucord.api.SettingsAPI
 import java.util.WeakHashMap
@@ -38,36 +41,113 @@ internal object HGPGOverlay {
     private const val MAX_NOTE = 1500
     private val launchers = WeakHashMap<Activity, TextView>()
     private var panel: Dialog? = null
+    private var panelRoot: View? = null
+    private var closingPanel = false
 
     fun attach(activity: Activity, settings: SettingsAPI) {
         try {
             val host = activity.findViewById<FrameLayout>(android.R.id.content) ?: return
-            val previous = host.findViewWithTag<View>(TAG)
-            if (previous != null) {
-                launchers[activity] = previous as? TextView ?: return
-                return
+            host.post {
+                if (activity.isFinishing || activity.isDestroyed) return@post
+                val existing = host.findViewWithTag<View>(TAG)
+                if (existing != null) {
+                    launchers[activity] = existing as? TextView ?: return@post
+                    return@post
+                }
+
+                val size = dp(activity, 54)
+                val button = TextView(activity).apply {
+                    tag = TAG
+                    text = "HG"
+                    textSize = 14f
+                    typeface = Typeface.DEFAULT_BOLD
+                    gravity = Gravity.CENTER
+                    setTextColor(Color.WHITE)
+                    contentDescription = "Drag to move HG PG button; tap to open the control panel"
+                    background = shape(activity, accent(settings), 100f, 0x99FFFFFF.toInt())
+                    elevation = dp(activity, 8).toFloat()
+                    isClickable = true
+                    isFocusable = true
+                    alpha = 0f
+                    scaleX = 0.72f
+                    scaleY = 0.72f
+                    setOnClickListener { showPanel(activity, settings) }
+                }
+
+                val maxX = (host.width - size).coerceAtLeast(0)
+                val maxY = (host.height - size).coerceAtLeast(0)
+                val savedX = settings.getInt("launcher_x_percent", -1)
+                val savedY = settings.getInt("launcher_y_percent", -1)
+                val initialX = if (savedX in 0..10000) (maxX * savedX / 10000f).toInt() else (maxX - dp(activity, 16)).coerceAtLeast(0)
+                val initialY = if (savedY in 0..10000) (maxY * savedY / 10000f).toInt() else (maxY - dp(activity, 104)).coerceAtLeast(0)
+                val params = FrameLayout.LayoutParams(size, size, Gravity.TOP or Gravity.START).apply {
+                    leftMargin = initialX
+                    topMargin = initialY
+                }
+                host.addView(button, params)
+                button.bringToFront()
+                launchers[activity] = button
+
+                var downRawX = 0f
+                var downRawY = 0f
+                var originX = initialX
+                var originY = initialY
+                var moved = false
+                button.setOnTouchListener { view, event ->
+                    val lp = view.layoutParams as? FrameLayout.LayoutParams ?: return@setOnTouchListener false
+                    when (event.actionMasked) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            downRawX = event.rawX
+                            downRawY = event.rawY
+                            originX = lp.leftMargin
+                            originY = lp.topMargin
+                            moved = false
+                            view.animate().scaleX(0.91f).scaleY(0.91f).setDuration(90)
+                                .setInterpolator(DecelerateInterpolator()).start()
+                            true
+                        }
+                        android.view.MotionEvent.ACTION_MOVE -> {
+                            val deltaX = event.rawX - downRawX
+                            val deltaY = event.rawY - downRawY
+                            if (!moved && (abs(deltaX) > dp(activity, 6) || abs(deltaY) > dp(activity, 6))) moved = true
+                            if (moved) {
+                                val boundX = (host.width - view.width).coerceAtLeast(0)
+                                val boundY = (host.height - view.height).coerceAtLeast(0)
+                                lp.leftMargin = (originX + deltaX.toInt()).coerceIn(0, boundX)
+                                lp.topMargin = (originY + deltaY.toInt()).coerceIn(0, boundY)
+                                view.layoutParams = lp
+                            }
+                            true
+                        }
+                        android.view.MotionEvent.ACTION_UP -> {
+                            view.animate().scaleX(1f).scaleY(1f).setDuration(150)
+                                .setInterpolator(DecelerateInterpolator()).start()
+                            if (moved) {
+                                val boundX = (host.width - view.width).coerceAtLeast(0)
+                                val boundY = (host.height - view.height).coerceAtLeast(0)
+                                val current = view.layoutParams as FrameLayout.LayoutParams
+                                settings.setInt("launcher_x_percent", if (boundX == 0) 0 else (current.leftMargin * 10000f / boundX).toInt().coerceIn(0, 10000))
+                                settings.setInt("launcher_y_percent", if (boundY == 0) 0 else (current.topMargin * 10000f / boundY).toInt().coerceIn(0, 10000))
+                                view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                                view.animate().translationY(-dp(activity, 3).toFloat()).setDuration(80).withEndAction {
+                                    view.animate().translationY(0f).setDuration(110).start()
+                                }.start()
+                            } else {
+                                view.performClick()
+                            }
+                            true
+                        }
+                        android.view.MotionEvent.ACTION_CANCEL -> {
+                            view.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
+                            true
+                        }
+                        else -> false
+                    }
+                }
+
+                button.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(280)
+                    .setInterpolator(DecelerateInterpolator()).start()
             }
-            val launcher = TextView(activity).apply {
-                tag = TAG
-                text = "HG"
-                textSize = 14f
-                typeface = Typeface.DEFAULT_BOLD
-                gravity = Gravity.CENTER
-                setTextColor(Color.WHITE)
-                contentDescription = "Open HG PG control panel"
-                background = shape(activity, accent(settings), 100f, 0x99FFFFFF.toInt())
-                elevation = dp(activity, 8).toFloat()
-                isClickable = true
-                isFocusable = true
-                setOnClickListener { showPanel(activity, settings) }
-            }
-            val size = dp(activity, 54)
-            host.addView(launcher, FrameLayout.LayoutParams(size, size, Gravity.BOTTOM or Gravity.END).apply {
-                marginEnd = dp(activity, 16)
-                bottomMargin = dp(activity, 24)
-            })
-            launcher.bringToFront()
-            launchers[activity] = launcher
         } catch (_: Throwable) {
             // Protect the host if a future Aliucord layout changes.
         }
@@ -76,6 +156,8 @@ internal object HGPGOverlay {
     fun dismiss() {
         try { panel?.dismiss() } catch (_: Throwable) {}
         panel = null
+        panelRoot = null
+        closingPanel = false
         launchers.forEach { (_, button) -> (button.parent as? ViewGroup)?.removeView(button) }
         launchers.clear()
     }
@@ -83,11 +165,17 @@ internal object HGPGOverlay {
     private fun showPanel(activity: Activity, settings: SettingsAPI) {
         if (activity.isFinishing || activity.isDestroyed) return
         try { panel?.dismiss() } catch (_: Throwable) {}
+        panelRoot = null
+        closingPanel = false
         val root = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(activity, 16), dp(activity, 16), dp(activity, 16), dp(activity, 16))
             background = shape(activity, BG, 22f, 0xFF303B4B.toInt())
+            alpha = 0f
+            scaleX = 0.94f
+            scaleY = 0.94f
         }
+        panelRoot = root
         val header = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val titleBox = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
         titleBox.addView(TextView(activity).apply {
@@ -109,7 +197,7 @@ internal object HGPGOverlay {
             setTextColor(FG)
             contentDescription = "Close panel"
             setPadding(dp(activity, 12), 0, dp(activity, 8), 0)
-            setOnClickListener { panel?.dismiss() }
+            setOnClickListener { dismissPanelAnimated() }
         })
         root.addView(header)
         root.addView(View(activity).apply { setBackgroundColor(0xFF303B4B.toInt()) },
@@ -123,35 +211,48 @@ internal object HGPGOverlay {
         addText(options, "Your utilities, one panel.", 18f, FG, true, 0, 4)
         addText(options, "No slash commands required. Choose a tool below.", 13f, MUTED, false, 0, 14)
         addCard(options, "📝  Private Notes", "Save or clear a note on this device.") {
-            panel?.dismiss(); showNote(activity, settings)
+            dismissPanelAnimated { showNote(activity, settings) }
         }
         addCard(options, "🐉  Fursona Creator", "Build a text card and copy it to clipboard.") {
-            panel?.dismiss(); showFursona(activity)
+            dismissPanelAnimated { showFursona(activity) }
         }
         addCard(options, "📶  Network Diagnostics", "Check Android connection and validated-internet state.") {
-            panel?.dismiss(); showNetwork(activity)
+            dismissPanelAnimated { showNetwork(activity) }
         }
         addCard(options, "🎨  Panel Theme", "Choose the accent color for the HG launcher.") {
-            panel?.dismiss(); showThemes(activity, settings)
+            dismissPanelAnimated { showThemes(activity, settings) }
         }
         addCard(options, "🌐  Community Shortcuts", "Indonesia Furs and Anthro Indonesia.") {
-            panel?.dismiss()
-            AlertDialog.Builder(activity).setTitle("Community Shortcuts")
-                .setMessage("Indonesia Furs\nAnthro Indonesia\n\nUse each community's verified official page or invite. HG PG does not automatically join servers.")
-                .setPositiveButton("Close", null).show()
+            dismissPanelAnimated {
+                AlertDialog.Builder(activity).setTitle("Community Shortcuts")
+                    .setMessage("Indonesia Furs\nAnthro Indonesia\n\nUse each community's verified official page or invite. HG PG does not automatically join servers.")
+                    .setPositiveButton("Close", null).show()
+            }
         }
         addCard(options, "🔒  Privacy & About", "Local-first utilities, no telemetry.") {
-            panel?.dismiss()
-            AlertDialog.Builder(activity).setTitle("HG PG · Privacy")
-                .setMessage("HG PG does not scrape Discord messages, members, channels, or servers. It does not send telemetry or automate Discord user actions. Notes and profile preferences stay in Aliucord plugin settings on this device. Network diagnostics read Android's local connection state. Fursona cards are generated on-device.\n\nThe floating button is part of Aliucord's own UI; no draw-over-other-apps permission is requested.")
-                .setPositiveButton("Close", null).show()
+            dismissPanelAnimated {
+                AlertDialog.Builder(activity).setTitle("HG PG · Privacy")
+                    .setMessage("HG PG does not scrape Discord messages, members, channels, or servers. It does not send telemetry or automate Discord user actions. Notes and profile preferences stay in Aliucord plugin settings on this device. Network diagnostics read Android's local connection state. Fursona cards are generated on-device.\n\nThe floating button is part of Aliucord's own UI; no draw-over-other-apps permission is requested.")
+                    .setPositiveButton("Close", null).show()
+            }
         }
         val current = Dialog(activity)
         panel = current
         current.requestWindowFeature(Window.FEATURE_NO_TITLE)
         current.setContentView(root)
-        current.setCanceledOnTouchOutside(true)
-        current.setOnDismissListener { if (panel === current) panel = null }
+        current.setCanceledOnTouchOutside(false)
+        current.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+                dismissPanelAnimated()
+                true
+            } else false
+        }
+        current.setOnDismissListener {
+            if (panel === current) {
+                panel = null
+                panelRoot = null
+            }
+        }
         current.show()
         current.window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
@@ -162,6 +263,30 @@ internal object HGPGOverlay {
             setLayout(width, height)
             setGravity(Gravity.CENTER)
         }
+        root.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(230)
+            .setInterpolator(DecelerateInterpolator()).start()
+    }
+
+    private fun dismissPanelAnimated(after: (() -> Unit)? = null) {
+        val current = panel
+        val root = panelRoot
+        if (current == null || root == null) {
+            try { current?.dismiss() } catch (_: Throwable) {}
+            if (panel === current) panel = null
+            panelRoot = null
+            after?.invoke()
+            return
+        }
+        if (closingPanel) return
+        closingPanel = true
+        root.animate().alpha(0f).scaleX(0.94f).scaleY(0.94f).setDuration(150)
+            .setInterpolator(DecelerateInterpolator()).withEndAction {
+                closingPanel = false
+                if (panel === current) panel = null
+                if (panelRoot === root) panelRoot = null
+                try { current.dismiss() } catch (_: Throwable) {}
+                after?.invoke()
+            }.start()
     }
 
     private fun showNote(activity: Activity, settings: SettingsAPI) {
@@ -270,7 +395,12 @@ internal object HGPGOverlay {
             setPadding(dp(ctx, 14), dp(ctx, 12), dp(ctx, 14), dp(ctx, 12))
             background = shape(ctx, CARD, 15f)
             isClickable = true; isFocusable = true
-            setOnClickListener { click() }
+            setOnClickListener {
+                animate().scaleX(0.98f).scaleY(0.98f).setDuration(65).withEndAction {
+                    animate().scaleX(1f).scaleY(1f).setDuration(80).start()
+                    click()
+                }.start()
+            }
         }
         tile.addView(TextView(ctx).apply { text = title; textSize = 16f; typeface = Typeface.DEFAULT_BOLD; setTextColor(FG) })
         tile.addView(TextView(ctx).apply { text = description; textSize = 12f; setTextColor(MUTED); setPadding(0, dp(ctx, 4), 0, 0) })
