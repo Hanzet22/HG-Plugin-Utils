@@ -6,6 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.SeekBar
+import android.widget.Switch
 import android.widget.TextView
 import com.aliucord.api.SettingsAPI
 import com.aliucord.fragments.SettingsPage
@@ -36,6 +38,65 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
             textSize = 14f
             setTextColor(activeTheme.muted)
             setPadding(0, (10 * density).toInt(), 0, (16 * density).toInt())
+        })
+
+        var ambientEnabled = pluginSettings.getBool("ambient_light_enabled", true)
+        var ambientIntensity = pluginSettings.getInt("ambient_light_intensity", 72).coerceIn(0, 100)
+        HGPGGlobalMotionOverlay.setAmbientEnabled(ambientEnabled)
+        HGPGGlobalMotionOverlay.setAmbientIntensity(ambientIntensity)
+
+        container.addView(TextView(context).apply {
+            text = "Ambient Light"
+            textSize = 17f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(activeTheme.text)
+            setPadding(0, (6 * density).toInt(), 0, (2 * density).toInt())
+        })
+        container.addView(TextView(context).apply {
+            text = "Moving, theme-matched glow around the screen edges."
+            textSize = 13f
+            setTextColor(activeTheme.muted)
+            setPadding(0, 0, 0, (8 * density).toInt())
+        })
+
+        val ambientSwitch = Switch(context).apply {
+            text = "Enable Ambient Light"
+            setTextColor(activeTheme.text)
+            isChecked = ambientEnabled
+        }
+        ambientSwitch.setOnCheckedChangeListener { _, checked ->
+            ambientEnabled = checked
+            pluginSettings.setBool("ambient_light_enabled", checked)
+            HGPGGlobalMotionOverlay.setAmbientEnabled(checked)
+        }
+        container.addView(ambientSwitch, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = (4 * density).toInt()
+        })
+
+        val ambientIntensityLabel = TextView(context).apply {
+            text = "Ambient Light Intensity: $ambientIntensity%"
+            textSize = 14f
+            setTextColor(activeTheme.muted)
+        }
+        container.addView(ambientIntensityLabel)
+        val ambientIntensitySlider = SeekBar(context).apply {
+            max = 100
+            progress = ambientIntensity
+            contentDescription = "Ambient Light intensity"
+        }
+        ambientIntensitySlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                ambientIntensity = progress.coerceIn(0, 100)
+                ambientIntensityLabel.text = "Ambient Light Intensity: $ambientIntensity%"
+                HGPGGlobalMotionOverlay.setAmbientIntensity(ambientIntensity)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                pluginSettings.setInt("ambient_light_intensity", ambientIntensity)
+            }
+        })
+        container.addView(ambientIntensitySlider, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = (10 * density).toInt()
         })
 
         val current = TextView(context).apply {

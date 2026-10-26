@@ -1,9 +1,14 @@
-version = "0.8.1"
+version = "0.8.2"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.8.2
+        * Added theme-matched ambient edge lighting with softly moving radial glows and a breathing light pulse.
+        * Added persistent Ambient Light toggle and 0–100% intensity control in HG PG settings.
+        * Fixed the animation ticker so it resumes after window or view visibility returns, rather than silently stopping.
+
         # 0.8.1
         * Added a non-interactive native Canvas motion overlay above Aliucord content so animation is visible even when Discord child views have opaque backgrounds.
         * Added theme-aware ambient effects for all six built-in profiles, automatic activity reattachment, touch pass-through, and lifecycle cleanup.

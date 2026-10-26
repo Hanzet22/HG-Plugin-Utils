@@ -28,9 +28,13 @@ import kotlin.math.sin
 internal object HGPGGlobalMotionOverlay {
     private val overlays = WeakHashMap<ViewGroup, HGPGMotionOverlayView>()
     @Volatile private var currentTheme = HGPGThemes.get("garuda")
+    @Volatile private var ambientEnabled = true
+    @Volatile private var ambientIntensity = 72
 
     fun start(settings: SettingsAPI) {
         currentTheme = HGPGThemes.get(readSetting(settings.getString("theme_profile", "garuda")))
+        ambientEnabled = settings.getBool("ambient_light_enabled", true)
+        ambientIntensity = settings.getInt("ambient_light_intensity", 72).coerceIn(0, 100)
     }
 
     fun setTheme(theme: HGPGTheme) {
@@ -38,6 +42,16 @@ internal object HGPGGlobalMotionOverlay {
         synchronized(overlays) {
             overlays.values.toList().forEach { it.setTheme(theme) }
         }
+    }
+
+    fun setAmbientEnabled(enabled: Boolean) {
+        ambientEnabled = enabled
+        synchronized(overlays) { overlays.values.toList().forEach { it.setAmbientEnabled(enabled) } }
+    }
+
+    fun setAmbientIntensity(intensity: Int) {
+        ambientIntensity = intensity.coerceIn(0, 100)
+        synchronized(overlays) { overlays.values.toList().forEach { it.setAmbientIntensity(ambientIntensity) } }
     }
 
     fun attach(activity: Activity) {
@@ -71,12 +85,14 @@ internal object HGPGGlobalMotionOverlay {
             val old = overlays[root]
             if (old != null && old.parent === root) {
                 old.setTheme(currentTheme)
+                old.setAmbientEnabled(ambientEnabled)
+                old.setAmbientIntensity(ambientIntensity)
                 old.bringToFront()
                 old.invalidate()
                 return
             }
             if (old?.parent is ViewGroup) (old.parent as ViewGroup).removeView(old)
-            val overlay = HGPGMotionOverlayView(root.context, currentTheme).apply {
+            val overlay = HGPGMotionOverlayView(root.context, currentTheme, ambientEnabled, ambientIntensity).apply {
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 isFocusable = false
                 isClickable = false
@@ -121,18 +137,51 @@ internal object HGPGGlobalMotionOverlay {
 /** Lightweight, theme-specific ambient effects; no opaque background is drawn. */
 private class HGPGMotionOverlayView(
     context: Context,
-    theme: HGPGTheme
+    theme: HGPGTheme,
+    ambientEnabledInitially: Boolean,
+    ambientIntensityInitially: Int
 ) : View(context) {
+    private data class AmbientGlow(
+        val centerX: Float,
+        val centerY: Float,
+        val radius: Float,
+        val shader: RadialGradient
+    )
+
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val density = resources.displayMetrics.density
     @Volatile private var currentTheme = theme
+    @Volatile private var ambientEnabled = ambientEnabledInitially
+    @Volatile private var ambientIntensity = ambientIntensityInitially.coerceIn(0, 100)
+    private var ambientGlows: List<AmbientGlow> = emptyList()
+    private var cachedWidth = 0
+    private var cachedHeight = 0
+    private var tickScheduled = false
+
     private val tick = object : Runnable {
         override fun run() {
-            if (isAttachedToWindow && visibility == VISIBLE && windowVisibility == VISIBLE) {
-                invalidate()
-                postDelayed(this, FRAME_MS)
-            }
+            tickScheduled = false
+            if (!isAttachedToWindow || visibility != VISIBLE || windowVisibility != VISIBLE) return
+            invalidate()
+            scheduleTick()
         }
+    }
+
+    private fun scheduleTick() {
+        if (!tickScheduled && isAttachedToWindow && visibility == VISIBLE && windowVisibility == VISIBLE) {
+            tickScheduled = true
+            postDelayed(tick, FRAME_MS)
+        }
+    }
+
+    private fun stopTick() {
+        removeCallbacks(tick)
+        tickScheduled = false
+    }
+
+    private fun syncTicker() {
+        if (isAttachedToWindow && visibility == VISIBLE && windowVisibility == VISIBLE) scheduleTick()
+        else stopTick()
     }
 
     init {
@@ -145,18 +194,98 @@ private class HGPGMotionOverlayView(
 
     fun setTheme(theme: HGPGTheme) {
         currentTheme = theme
+        rebuildAmbientGlows(width, height)
         invalidate()
+    }
+
+    fun setAmbientEnabled(enabled: Boolean) {
+        ambientEnabled = enabled
+        invalidate()
+    }
+
+    fun setAmbientIntensity(intensity: Int) {
+        ambientIntensity = intensity.coerceIn(0, 100)
+        invalidate()
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        rebuildAmbientGlows(w, h)
+    }
+
+    private fun rebuildAmbientGlows(w: Int, h: Int) {
+        if (w <= 0 || h <= 0) {
+            ambientGlows = emptyList()
+            cachedWidth = w
+            cachedHeight = h
+            return
+        }
+        val theme = currentTheme
+        val radius = maxOf(w, h).toFloat() * 0.48f
+        val positions = listOf(
+            Triple(w * 0.035f, h * 0.09f, theme.accent),
+            Triple(w * 0.965f, h * 0.12f, theme.secondary),
+            Triple(w * 0.025f, h * 0.91f, theme.secondary),
+            Triple(w * 0.975f, h * 0.88f, theme.accent)
+        )
+        ambientGlows = positions.map { (cx, cy, color) ->
+            AmbientGlow(
+                cx, cy, radius,
+                RadialGradient(
+                    cx, cy, radius,
+                    intArrayOf(withAlpha(color, 85), withAlpha(color, 38), 0x00000000),
+                    floatArrayOf(0f, 0.42f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+            )
+        }
+        cachedWidth = w
+        cachedHeight = h
+    }
+
+    private fun drawAmbientLight(canvas: Canvas, w: Float, h: Float, phase: Float) {
+        if (cachedWidth != width || cachedHeight != height || ambientGlows.isEmpty()) {
+            rebuildAmbientGlows(width, height)
+        }
+        val strength = ambientIntensity.coerceIn(0, 100)
+        if (!ambientEnabled || strength == 0) return
+        val movement = minOf(w, h) * 0.022f
+        ambientGlows.forEachIndexed { index, glow ->
+            val angle = phase * PI * 2.0 + index * 1.41
+            val dx = sin(angle).toFloat() * movement
+            val dy = sin(angle * 0.71 + 0.5).toFloat() * movement
+            val breath = 0.68f + 0.32f * (0.5f + 0.5f * sin(angle * 0.57 + 0.8).toFloat())
+            paint.shader = glow.shader
+            paint.style = Paint.Style.FILL
+            paint.colorFilter = null
+            paint.alpha = (strength * 1.7f * breath).toInt().coerceIn(0, 255)
+            canvas.save()
+            canvas.translate(dx, dy)
+            canvas.drawCircle(glow.centerX, glow.centerY, glow.radius, paint)
+            canvas.restore()
+        }
+        paint.shader = null
+        paint.alpha = 255
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        removeCallbacks(tick)
-        postDelayed(tick, FRAME_MS)
+        syncTicker()
     }
 
     override fun onDetachedFromWindow() {
-        removeCallbacks(tick)
+        stopTick()
         super.onDetachedFromWindow()
+    }
+
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        super.onWindowVisibilityChanged(visibility)
+        syncTicker()
+    }
+
+    override fun onVisibilityChanged(changedView: View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        syncTicker()
     }
 
     override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean = false
@@ -169,6 +298,7 @@ private class HGPGMotionOverlayView(
 
         val theme = currentTheme
         val phase = (SystemClock.uptimeMillis() % LOOP_MS).toFloat() / LOOP_MS.toFloat()
+        drawAmbientLight(canvas, w, h, phase)
         when (theme.motion) {
             HGPGMotion.DEEP_SEA -> drawDeepSea(canvas, w, h, phase, theme)
             HGPGMotion.GARUDA -> drawGaruda(canvas, w, h, phase, theme)
