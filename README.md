@@ -2,7 +2,9 @@
 
 A privacy-conscious Aliucord utility plugin, built with Kotlin and compiled through GitHub Actions.
 
-## Current version: 0.3.1 — Draggable Animated Floating Panel
+## Current plugin version: 0.4.0 — Animated Theme Garage
+
+The plugin's six animated palettes affect the HG PG launcher and panel. To theme the broader Aliucord/Discord UI, use the companion global-themes JSON pack with Aliucord's Themer plugin; this uses Themer's supported resource-color mappings rather than pretending a plugin overlay recolors every screen.
 
 HG PG now uses an **in-app floating panel instead of slash commands**. Tap the round **HG** launcher anywhere you place it in Aliucord to open it. Drag the launcher with your finger to move it; its normalized position is saved in plugin settings and restored later.
 
@@ -30,3 +32,9 @@ A successful commit is not proof of a successful build: check the workflow resul
 ## License
 
 GNU Affero General Public License v3.0 or later. See LICENSE.
+
+## Global UI theme pack
+
+The GitHub Actions workflow also publishes a separate hg-pg-global-themes artifact. Download its hg-pg-global-themes.zip, extract the six JSON files into Aliucord/themes/, restart Aliucord, then enable one theme in User Settings → Plugins → Themer. Keep Dark mode enabled for the best results.
+
+These global themes cover supported resource colors across the app, not just the HG PG panel. Some hard-coded/third-party UI elements may remain unchanged. The global JSON themes recolor the interface; the plugin's own panel keeps its custom motion effects. Animating every individual UI control would require deeper hooks and is not provided by the standard theme JSON format.

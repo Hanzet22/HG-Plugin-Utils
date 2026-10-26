@@ -1,0 +1,46 @@
+{
+  "manifest": {
+    "name": "HG PG — Gran Turismo Old",
+    "version": "1.0.0",
+    "author": "HyperGaruda",
+    "license": "AGPL-3.0-or-later"
+  },
+  "simple_colors": {
+    "background": 659736,
+    "background_secondary": 1647917,
+    "accent": 12048895,
+    "mention_highlight": 2506060,
+    "active_channel": 3163476,
+    "statusbar": 659736,
+    "input_background": 1647917,
+    "blocked_bg": 2109241
+  },
+  "colors": {
+    "brand_new": 12048895,
+    "brand_new_230": 12048895,
+    "brand_new_260": 16730962,
+    "brand_new_360": 12048895,
+    "brand_new_500": 12048895,
+    "brand_new_530": 16730962,
+    "brand_new_560": 12048895,
+    "brand_new_600": 12048895,
+    "link": 16730962,
+    "link_light": 16730962,
+    "primary_dark_600": 659736,
+    "primary_dark_630": 1647917,
+    "primary_dark_660": 1647917,
+    "primary_dark_700": 659736,
+    "primary_dark_800": 659736,
+    "primary_600": 1647917,
+    "primary_630": 1647917,
+    "primary_660": 2109241,
+    "primary_700": 1647917,
+    "primary_800": 659736,
+    "white_500": 15857402,
+    "white_800": 1647917
+  },
+  "drawable_tints": {
+    "drawable_overlay_channels_selected_dark": 3163476,
+    "drawable_overlay_channels_active_dark": 3163476
+  }
+}

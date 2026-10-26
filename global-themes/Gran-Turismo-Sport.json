@@ -1,0 +1,46 @@
+{
+  "manifest": {
+    "name": "HG PG — Gran Turismo Sport",
+    "version": "1.0.0",
+    "author": "HyperGaruda",
+    "license": "AGPL-3.0-or-later"
+  },
+  "simple_colors": {
+    "background": 266527,
+    "background_secondary": 664120,
+    "accent": 47359,
+    "mention_highlight": 474458,
+    "active_channel": 543600,
+    "statusbar": 266527,
+    "input_background": 664120,
+    "blocked_bg": 798025
+  },
+  "colors": {
+    "brand_new": 47359,
+    "brand_new_230": 47359,
+    "brand_new_260": 14546687,
+    "brand_new_360": 47359,
+    "brand_new_500": 47359,
+    "brand_new_530": 14546687,
+    "brand_new_560": 47359,
+    "brand_new_600": 47359,
+    "link": 14546687,
+    "link_light": 14546687,
+    "primary_dark_600": 266527,
+    "primary_dark_630": 664120,
+    "primary_dark_660": 664120,
+    "primary_dark_700": 266527,
+    "primary_dark_800": 266527,
+    "primary_600": 664120,
+    "primary_630": 664120,
+    "primary_660": 798025,
+    "primary_700": 664120,
+    "primary_800": 266527,
+    "white_500": 15924223,
+    "white_800": 664120
+  },
+  "drawable_tints": {
+    "drawable_overlay_channels_selected_dark": 543600,
+    "drawable_overlay_channels_active_dark": 543600
+  }
+}

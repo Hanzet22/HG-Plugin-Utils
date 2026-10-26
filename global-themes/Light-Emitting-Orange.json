@@ -1,0 +1,46 @@
+{
+  "manifest": {
+    "name": "HG PG — Light Emitting Orange",
+    "version": "1.0.0",
+    "author": "HyperGaruda",
+    "license": "AGPL-3.0-or-later"
+  },
+  "simple_colors": {
+    "background": 1050368,
+    "background_secondary": 2691588,
+    "accent": 16738816,
+    "mention_highlight": 5973511,
+    "active_channel": 6957576,
+    "statusbar": 1050368,
+    "input_background": 2691588,
+    "blocked_bg": 3808006
+  },
+  "colors": {
+    "brand_new": 16738816,
+    "brand_new_230": 16738816,
+    "brand_new_260": 16763753,
+    "brand_new_360": 16738816,
+    "brand_new_500": 16738816,
+    "brand_new_530": 16763753,
+    "brand_new_560": 16738816,
+    "brand_new_600": 16738816,
+    "link": 16763753,
+    "link_light": 16763753,
+    "primary_dark_600": 1050368,
+    "primary_dark_630": 2691588,
+    "primary_dark_660": 2691588,
+    "primary_dark_700": 1050368,
+    "primary_dark_800": 1050368,
+    "primary_600": 2691588,
+    "primary_630": 2691588,
+    "primary_660": 3808006,
+    "primary_700": 2691588,
+    "primary_800": 1050368,
+    "white_500": 16773595,
+    "white_800": 2691588
+  },
+  "drawable_tints": {
+    "drawable_overlay_channels_selected_dark": 6957576,
+    "drawable_overlay_channels_active_dark": 6957576
+  }
+}
