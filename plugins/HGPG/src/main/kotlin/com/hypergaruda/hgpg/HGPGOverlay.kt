@@ -118,7 +118,7 @@ internal object HGPGOverlay {
             })
         val scroll = ScrollView(activity).apply { isFillViewport = true }
         val options = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
-        scroll.addView(options, ScrollView.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT))
+        scroll.addView(options)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         addText(options, "Your utilities, one panel.", 18f, FG, true, 0, 4)
         addText(options, "No slash commands required. Choose a tool below.", 13f, MUTED, false, 0, 14)
