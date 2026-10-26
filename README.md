@@ -1,37 +1,32 @@
 # HG PG — HyperGaruda Plugin
 
-A privacy-conscious Aliucord plugin toolkit, built with Kotlin and compiled through GitHub Actions.
+A privacy-conscious Aliucord utility plugin, built with Kotlin and compiled through GitHub Actions.
 
-## Current MVP
+## Current version: 0.3.0 — Floating Control Panel
 
-- **Local utility notes:** save, view, and clear a private note in Aliucord plugin settings.
-- **Fursona card generator:** format a shareable text card from details supplied by the user. User-entered display text is escaped to neutralize mentions and Markdown formatting.
-- **Network diagnostics:** report the device's current network transport (including VPN detection) and Android's validated-network status. This is a status check, not an internet speed test or a latency measurement.
-- **Theme profiles:** save a named visual preference profile and preview it in the plugin settings page. This initial version does not recolor Discord's entire interface; full UI theme application requires a separately verified UI integration.
-- **Community shortcuts:** show community names and a reminder to use verified official links. No scraping or automatic actions.
+HG PG now uses an **in-app floating panel instead of slash commands**. Tap the round **HG** launcher near the bottom-right of Aliucord to open it.
 
-## Commands
+### Panel tools
 
-- `/hgpg-help` — list commands and privacy notes.
-- `/hgpg-status` — plugin overview.
-- `/hgpg-note` — show the saved note; pass text to save it, or `clear` to remove it.
-- `/hgpg-fursona` — create a text card using the provided name, species, and colors.
-- `/hgpg-network` — inspect current network status.
-- `/hgpg-theme` — view or set a theme profile (`garuda`, `midnight`, `forest`, `aurora`).
-- `/hgpg-community` — show community shortcut guidance.
+- **Private Notes** — save, edit, and clear a local note in Aliucord plugin settings.
+- **Fursona Creator** — generate a simple text card from details you provide and copy it to the clipboard.
+- **Network Diagnostics** — report Android's current network transport and validated-internet status. This is not a speed test or latency measurement.
+- **Panel Theme** — choose a Garuda, Midnight, Forest, or Aurora accent for the HG PG launcher. This does not recolor Discord's entire interface.
+- **Community Shortcuts** — shows Indonesia Furs and Anthro Indonesia as community names and recommends using verified official pages or invites.
+- **Privacy & About** — explains the plugin's local-first behavior.
 
-## Build
-
-The current source version is **0.2.2**. This release works around an Aliucord/Discord runtime issue where obfuscated `CharSequence` wrappers such as `d0.d0.b` can trigger `ClassCastException: ... cannot be cast to kotlin.collections.IntIterator` when processed by Kotlin string helpers. External command/settings text is converted to a concrete Java `String` before processing, and vulnerable blank checks are replaced.
-
-The `Build HG PG` GitHub Actions workflow runs on pushes to `main` and manual dispatch. It builds with JDK 21 and Gradle 9.3.1, then uploads the plugin ZIP as a workflow artifact. Open **Actions → Build HG PG → latest run → Artifacts** to download it.
-
-A successful commit is not proof of a successful build: check the workflow result before installing anything.
+The launcher is inserted into Aliucord's own content view. It does **not** request Android's “draw over other apps” permission. Restart Aliucord after installing or updating version 0.3.0 so the activity hook is active.
 
 ## Privacy and safety
 
-HG PG does not scrape messages, members, channels, or servers; does not send telemetry; and does not automate Discord user actions. Notes and theme-profile preferences are stored in Aliucord's plugin settings on the device.
+HG PG does not scrape messages, members, channels, or servers; does not send telemetry; and does not automate Discord user actions. Notes and theme-profile preferences are stored in Aliucord's plugin settings on the device. Network diagnostics only read Android's local connectivity state. Fursona cards are generated on-device.
+
+## Build
+
+The Build HG PG GitHub Actions workflow runs on pushes to main and manual dispatch. It builds with JDK 21 and Gradle 9.3.1, then uploads the plugin ZIP as a workflow artifact. Open Actions, choose Build HG PG, open the latest run, then download the artifact.
+
+A successful commit is not proof of a successful build: check the workflow result before installing anything.
 
 ## License
 
-GNU Affero General Public License v3.0 or later. See [LICENSE](LICENSE).
+GNU Affero General Public License v3.0 or later. See LICENSE.

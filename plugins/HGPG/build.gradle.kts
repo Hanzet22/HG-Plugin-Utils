@@ -1,9 +1,14 @@
-version = "0.2.2"
+version = "0.3.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.3.0
+        * Replaced slash commands with an in-app floating HG PG control panel.
+        * Added panel actions for local notes, fursona cards, network diagnostics, accent presets, community guidance, and privacy.
+        * The launcher is attached inside Aliucord's own view and does not request draw-over-other-apps permission.
+
         # 0.2.2
         * Fixed d0.d0.b / IntIterator command crashes by converting Aliucord-provided text to a real String before processing.
         * Replaced vulnerable blank checks and multiline string trimming with compatibility-safe implementations.
