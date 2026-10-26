@@ -22,7 +22,7 @@ A privacy-conscious Aliucord plugin toolkit, built with Kotlin and compiled thro
 
 ## Build
 
-The current source version is **0.2.1**. This patch fixes a crash when opening HG PG settings by calling the base `SettingsPage.onViewBound(view)` before adding any views.
+The current source version is **0.2.2**. This release works around an Aliucord/Discord runtime issue where obfuscated `CharSequence` wrappers such as `d0.d0.b` can trigger `ClassCastException: ... cannot be cast to kotlin.collections.IntIterator` when processed by Kotlin string helpers. External command/settings text is converted to a concrete Java `String` before processing, and vulnerable blank checks are replaced.
 
 The `Build HG PG` GitHub Actions workflow runs on pushes to `main` and manual dispatch. It builds with JDK 21 and Gradle 9.3.1, then uploads the plugin ZIP as a workflow artifact. Open **Actions → Build HG PG → latest run → Artifacts** to download it.
 
