@@ -2,7 +2,7 @@
 
 A privacy-conscious Aliucord utility plugin, built with Kotlin and compiled through GitHub Actions.
 
-## Current plugin version: 0.9.0 — Native UI/UX Motion
+## Current plugin version: 0.10.0 — Functional Overlay Tools
 
 HG PG includes six custom animated themes, a **built-in app-wide resource color engine**, an **animated background on the native Aliucord screen root**, an **app-wide motion engine**, and a **high-tech rendering layer**. The selected theme paints a moving native `Drawable` backdrop behind the screen content; screen/dialog entrances replay when resumed, and press/release feedback is more pronounced. It also adds WebView load transitions, character-by-character reveals for short non-input text updates, and temporary hardware-accelerated layers. On Android 12+, supported WebViews can use a brief blur-to-sharp RenderEffect transition.
 
@@ -23,16 +23,17 @@ HG PG uses an **in-app floating panel instead of slash commands**. Tap the round
 
 - **Private Notes** — save, edit, and clear a local note.
 - **Fursona Creator** — generate a simple text card from details you provide and copy it to the clipboard.
-- **Network Diagnostics** — report Android's current network transport and validated-internet status. This is not a speed test or latency measurement.
+- **Network Diagnostics** — report Android's current transport and validated-internet status, then optionally run a single HTTPS reachability check. It is not a speed test.
 - **Animated Theme Garage** — choose one of six built-in app-wide color themes and theme-specific motion styles, WebView transitions, and text reveals across supported app views.
-- **Community Shortcuts** — shows Indonesia Furs and Anthro Indonesia as community names and recommends using verified official pages or invites.
-- **Privacy & About** — explains the plugin's local-first behavior.
+- **Community Shortcuts** — open verified Indonesia Furs website/link hub/community platform and IWAG event information. An unverified direct Anthro Indonesia URL is not fabricated.
+- **Local Data & Controls** — export/import a versioned JSON backup via clipboard, reset launcher position, and clear the saved note. Import validates the format and asks before overwriting settings.
+- **Privacy & About** — explains the plugin's local-first behavior and opens local-data controls.
 
 The launcher appears above Aliucord's normal content and remains available while you navigate the app. It has entrance/press feedback; the panel and text use staggered fade-in transitions; the panel fades/scales out when closed; and the Ambient Light slider animates into place and responds to touch. Action feedback appears as theme-aware in-app notification bubbles that slide/fade in, fade out automatically, and can be tapped to dismiss. These bubbles are added to Aliucord's own content view and do **not** request Android's “draw over other apps” permission.
 
 ## Privacy and safety
 
-HG PG does not scrape messages, members, channels, or servers; does not send telemetry; and does not automate Discord user actions. Notes and theme-profile preferences are stored in Aliucord plugin settings on the device. Network diagnostics only read Android's local connectivity state. Fursona cards are generated on-device.
+HG PG does not scrape messages, members, channels, or servers; does not send telemetry; and does not automate Discord user actions. Notes and theme-profile preferences are stored in Aliucord plugin settings on the device. The optional reachability test runs only after a tap and makes one HTTPS request to Google's connectivity-check endpoint; it does not send HG PG notes, preferences, or Discord data. Backup export/import uses clipboard text only and does not upload the backup. Fursona cards are generated on-device.
 
 ## Build
 

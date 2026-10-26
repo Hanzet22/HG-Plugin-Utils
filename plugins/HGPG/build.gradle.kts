@@ -1,9 +1,16 @@
-version = "0.9.0"
+version = "0.10.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.10.0
+        * Added launcher enable/disable control and a reset-position action in HG PG settings.
+        * Added validated local JSON backup export/import through the clipboard, with overwrite confirmation and range/theme validation.
+        * Added an optional asynchronous HTTPS reachability test to Network Diagnostics with timeout handling.
+        * Connected Community Shortcuts to verified public Indonesia Furs and IWAG pages; avoids fabricating an unverified Anthro Indonesia URL.
+        * Expanded Privacy & About messaging to disclose the optional network check and clipboard-only backups.
+
         # 0.9.0
         * Added theme-aware in-app notification bubbles with fade-and-slide entry, timed fade-out, and tap-to-dismiss behavior.
         * Added staggered fade-in text transitions to HG PG-owned panel and settings UI without animating input fields or Discord chat text.

@@ -51,6 +51,54 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
         HGPGGlobalMotionOverlay.setAmbientIntensity(ambientIntensity)
 
         container.addView(TextView(context).apply {
+            text = "Floating Button"
+            textSize = 17f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(activeTheme.text)
+            setPadding(0, (6 * density).toInt(), 0, (2 * density).toInt())
+        })
+        container.addView(TextView(context).apply {
+            text = "Show or hide the in-app HG launcher without requesting draw-over-other-apps permission."
+            textSize = 13f
+            setTextColor(activeTheme.muted)
+            setPadding(0, 0, 0, (8 * density).toInt())
+        })
+
+        val launcherSwitch = Switch(context).apply {
+            text = "Enable Floating Button"
+            setTextColor(activeTheme.text)
+            isChecked = pluginSettings.getBool("launcher_enabled", true)
+        }
+        launcherSwitch.setOnCheckedChangeListener { _, checked ->
+            pluginSettings.setBool("launcher_enabled", checked)
+            (context as? Activity)?.let { activity ->
+                HGPGOverlay.setLauncherEnabled(activity, pluginSettings, checked)
+            }
+        }
+        container.addView(launcherSwitch, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = (4 * density).toInt()
+        })
+
+        val resetLauncherButton = Button(context).apply {
+            text = "Reset Floating Button Position"
+            isAllCaps = false
+            setTextColor(activeTheme.text)
+            background = GradientDrawable().apply {
+                cornerRadius = 12f * density
+                setColor(activeTheme.surfaceRaised)
+                setStroke((1.2f * density).toInt().coerceAtLeast(1), activeTheme.border)
+            }
+            setOnClickListener {
+                (context as? Activity)?.let { activity ->
+                    HGPGOverlay.resetLauncherPosition(activity, pluginSettings)
+                }
+            }
+        }
+        container.addView(resetLauncherButton, LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = (14 * density).toInt()
+        })
+
+        container.addView(TextView(context).apply {
             text = "Ambient Light"
             textSize = 17f
             typeface = android.graphics.Typeface.DEFAULT_BOLD

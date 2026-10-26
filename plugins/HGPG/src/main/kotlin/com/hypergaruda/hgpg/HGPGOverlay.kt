@@ -5,12 +5,14 @@ import android.app.Dialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.os.Build
 import android.text.InputType
 import android.view.Gravity
@@ -29,6 +31,7 @@ import kotlin.math.abs
 import androidx.appcompat.app.AlertDialog
 import com.aliucord.api.SettingsAPI
 import java.util.WeakHashMap
+import org.json.JSONObject
 
 /** In-app floating launcher and tool panel, hosted inside Aliucord's own view tree. */
 internal object HGPGOverlay {
@@ -46,6 +49,11 @@ internal object HGPGOverlay {
     fun attach(activity: Activity, settings: SettingsAPI) {
         try {
             val host = activity.findViewById<FrameLayout>(android.R.id.content) ?: return
+            if (!settings.getBool("launcher_enabled", true)) {
+                host.findViewWithTag<View>(TAG)?.let { (it.parent as? ViewGroup)?.removeView(it) }
+                launchers.remove(activity)
+                return
+            }
             host.post {
                 if (activity.isFinishing || activity.isDestroyed) return@post
                 val existing = host.findViewWithTag<View>(TAG)
@@ -161,6 +169,65 @@ internal object HGPGOverlay {
         launchers.clear()
     }
 
+    /** Enable or disable the floating launcher without requiring an app restart. */
+    fun setLauncherEnabled(activity: Activity, settings: SettingsAPI, enabled: Boolean) {
+        settings.setBool("launcher_enabled", enabled)
+        if (enabled) {
+            attach(activity, settings)
+            toast(activity, "Floating button enabled.")
+            return
+        }
+
+        try { panel?.dismiss() } catch (_: Throwable) {}
+        panel = null
+        panelRoot = null
+        closingPanel = false
+        launchers.toMap().forEach { (_, button) ->
+            (button.parent as? ViewGroup)?.removeView(button)
+        }
+        launchers.clear()
+        activity.findViewById<ViewGroup>(android.R.id.content)
+            ?.findViewWithTag<View>(TAG)
+            ?.let { (it.parent as? ViewGroup)?.removeView(it) }
+        HGPGInAppBubble.show(activity, "HG PG", "Floating button disabled.")
+    }
+
+    /** Return the floating launcher to its default lower-right position. */
+    fun resetLauncherPosition(activity: Activity, settings: SettingsAPI) {
+        settings.setInt("launcher_x_percent", -1)
+        settings.setInt("launcher_y_percent", -1)
+        val host = activity.findViewById<FrameLayout>(android.R.id.content)
+        if (host == null) {
+            toast(activity, "Position reset; reopen Aliucord to reattach the button.")
+            return
+        }
+        host.post {
+            if (activity.isFinishing || activity.isDestroyed) return@post
+            val button = host.findViewWithTag<View>(TAG) as? TextView
+            if (button == null) {
+                attach(activity, settings)
+                toast(activity, "Default launcher position restored.")
+                return@post
+            }
+            val maxX = (host.width - button.width).coerceAtLeast(0)
+            val maxY = (host.height - button.height).coerceAtLeast(0)
+            val x = (maxX - dp(activity, 16)).coerceAtLeast(0)
+            val y = (maxY - dp(activity, 104)).coerceAtLeast(0)
+            val params = button.layoutParams as? FrameLayout.LayoutParams
+            if (params != null) {
+                params.leftMargin = x
+                params.topMargin = y
+                button.layoutParams = params
+            }
+            settings.setInt("launcher_x_percent", if (maxX == 0) 0 else (x * 10000f / maxX).toInt().coerceIn(0, 10000))
+            settings.setInt("launcher_y_percent", if (maxY == 0) 0 else (y * 10000f / maxY).toInt().coerceIn(0, 10000))
+            button.animate().scaleX(1.12f).scaleY(1.12f).setDuration(120L).withEndAction {
+                button.animate().scaleX(1f).scaleY(1f).setDuration(150L).start()
+            }.start()
+            toast(activity, "Default launcher position restored.")
+        }
+    }
+
     /** Refresh existing launcher(s) immediately after a theme is selected. */
     fun refreshTheme(settings: SettingsAPI) {
         val selected = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda")))
@@ -227,7 +294,7 @@ internal object HGPGOverlay {
         scroll.addView(options)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         addText(options, "Your utilities, one panel.", 18f, theme.text, true, 0, 4)
-        addText(options, "Six animated visual systems. Choose a tool below.", 13f, theme.muted, false, 0, 14)
+        addText(options, "Useful tools, local data controls, and visual settings.", 13f, theme.muted, false, 0, 14)
         addCard(options, "📝  Private Notes", "Save or clear a note on this device.", theme) {
             dismissPanelAnimated { showNote(activity, settings) }
         }
@@ -240,18 +307,18 @@ internal object HGPGOverlay {
         addCard(options, "🎨  Animated Theme Garage", "Six custom palettes with their own moving backdrop and launcher animation.", theme) {
             dismissPanelAnimated { showThemes(activity, settings) }
         }
-        addCard(options, "🌐  Community Shortcuts", "Indonesia Furs and Anthro Indonesia.", theme) {
-            dismissPanelAnimated {
-                AlertDialog.Builder(activity).setTitle("Community Shortcuts")
-                    .setMessage("Indonesia Furs\nAnthro Indonesia\n\nUse each community's verified official page or invite. HG PG does not automatically join servers.")
-                    .setPositiveButton("Close", null).show()
-            }
+        addCard(options, "🌐  Community Shortcuts", "Open verified Indonesia Furs community pages.", theme) {
+            dismissPanelAnimated { showCommunity(activity) }
         }
-        addCard(options, "🔒  Privacy & About", "Local-first utilities, no telemetry.", theme) {
+        addCard(options, "🧰  Local Data & Controls", "Back up, restore, and manage local HG PG data.", theme) {
+            dismissPanelAnimated { showDataControls(activity, settings) }
+        }
+        addCard(options, "🔒  Privacy & About", "Review privacy details and manage local data.", theme) {
             dismissPanelAnimated {
-                AlertDialog.Builder(activity).setTitle("HG PG · Privacy")
-                    .setMessage("HG PG does not scrape Discord messages, members, channels, or servers. It does not send telemetry or automate Discord user actions. Notes and profile preferences stay in Aliucord plugin settings on this device. Network diagnostics read Android's local connection state. Fursona cards are generated on-device.\n\nThe floating button is part of Aliucord's own UI; no draw-over-other-apps permission is requested.")
-                    .setPositiveButton("Close", null).show()
+                AlertDialog.Builder(activity).setTitle("HG PG · Privacy & About")
+                    .setMessage("HG PG does not scrape Discord messages, members, channels, or servers, send telemetry, or automate Discord user actions. Notes and preferences are stored in Aliucord plugin settings on this device.\n\nThe optional reachability check runs only when you tap it and sends one HTTPS request to Google's connectivity-check endpoint; it does not transmit your note, profile, or Discord data. Backup export copies a JSON file to your clipboard only when requested; HG PG does not upload it.\n\nThe floating button lives inside Aliucord's own view tree and does not request Android's draw-over-other-apps permission.")
+                    .setPositiveButton("Manage local data") { _, _ -> showDataControls(activity, settings) }
+                    .setNegativeButton("Close", null).show()
             }
         }
         val current = Dialog(activity)
@@ -378,16 +445,211 @@ internal object HGPGOverlay {
     }
 
     private fun showNetwork(activity: Activity) {
-        AlertDialog.Builder(activity).setTitle("Network Diagnostics")
-            .setMessage(networkSummary(activity) + "\n\nThis is a status check, not a speed or latency test.")
-            .setPositiveButton("Refresh", null).setNegativeButton("Close", null).create().also { d ->
-                d.setOnShowListener {
-                    d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                        d.setMessage(networkSummary(activity) + "\n\nThis is a status check, not a speed or latency test.")
-                    }
-                }
-                d.show()
+        val dialog = AlertDialog.Builder(activity).setTitle("Network Diagnostics")
+            .setMessage(networkSummary(activity) + "\n\nStatus is read from Android. Tap Test reachability to make one optional HTTPS request.")
+            .setPositiveButton("Refresh status", null)
+            .setNeutralButton("Test reachability", null)
+            .setNegativeButton("Close", null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                dialog.setMessage(networkSummary(activity) + "\n\nStatus is read from Android. Tap Test reachability to make one optional HTTPS request.")
             }
+            val testButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+            testButton.setOnClickListener {
+                testButton.isEnabled = false
+                dialog.setMessage(networkSummary(activity) + "\n\nChecking HTTPS reachability…")
+                Thread({
+                    val startedAt = System.currentTimeMillis()
+                    val result = try {
+                        val connection = java.net.URL("https://connectivitycheck.gstatic.com/generate_204")
+                            .openConnection() as java.net.HttpURLConnection
+                        connection.connectTimeout = 5000
+                        connection.readTimeout = 5000
+                        connection.requestMethod = "GET"
+                        connection.useCaches = false
+                        try {
+                            connection.connect()
+                            val code = connection.responseCode
+                            val elapsedMs = (System.currentTimeMillis() - startedAt).coerceAtLeast(0L)
+                            if (code == 204) {
+                                "HTTPS reachability: success (HTTP 204, $elapsedMs ms)."
+                            } else {
+                                "HTTPS endpoint responded with HTTP $code ($elapsedMs ms)."
+                            }
+                        } finally {
+                            connection.disconnect()
+                        }
+                    } catch (error: Throwable) {
+                        val elapsedMs = (System.currentTimeMillis() - startedAt).coerceAtLeast(0L)
+                        "HTTPS reachability failed ($elapsedMs ms): " +
+                            (error.localizedMessage?.take(140) ?: error.javaClass.simpleName)
+                    }
+                    activity.runOnUiThread {
+                        if (dialog.isShowing && !activity.isFinishing && !activity.isDestroyed) {
+                            dialog.setMessage(networkSummary(activity) +
+                                "\n\n$result\n\nThis is a reachability check, not a speed test. No plugin data is sent.")
+                            testButton.isEnabled = true
+                        }
+                    }
+                }, "HGPG-network-check").apply {
+                    isDaemon = true
+                    start()
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun showCommunity(activity: Activity) {
+        AlertDialog.Builder(activity).setTitle("Community Shortcuts")
+            .setMessage("Open public pages that can be verified. Anthro Indonesia remains listed as a community reference; this build does not guess a separate URL for it.")
+            .setItems(arrayOf(
+                "Indonesia Furs — official website",
+                "Indonesia Furs — official links",
+                "Indonesia Furs Community Platform",
+                "IWAG — official event information"
+            )) { _, which ->
+                val target = when (which) {
+                    0 -> "https://furries.id/id/"
+                    1 -> "https://furries.id/id/links/"
+                    2 -> "https://community.furries.id/id/"
+                    else -> "https://iwag.furries.id/id/about/"
+                }
+                openWebPage(activity, target)
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun openWebPage(activity: Activity, url: String) {
+        try {
+            activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (_: Throwable) {
+            AlertDialog.Builder(activity).setTitle("Unable to open link")
+                .setMessage("No browser or compatible app could open this verified URL:\n$url")
+                .setPositiveButton("Close", null).show()
+        }
+    }
+
+    private fun showDataControls(activity: Activity, settings: SettingsAPI) {
+        AlertDialog.Builder(activity).setTitle("Local Data & Controls")
+            .setMessage("Backups contain your private note and HG PG preferences. Export copies JSON to the clipboard; import reads only clipboard text and never uploads it.")
+            .setItems(arrayOf(
+                "Export local backup to clipboard",
+                "Import backup from clipboard",
+                "Reset floating button position",
+                "Clear saved private note"
+            )) { _, which ->
+                when (which) {
+                    0 -> exportLocalBackup(activity, settings)
+                    1 -> importLocalBackup(activity, settings)
+                    2 -> resetLauncherPosition(activity, settings)
+                    3 -> AlertDialog.Builder(activity).setTitle("Clear private note?")
+                        .setMessage("This permanently clears the saved local note from HG PG settings on this device.")
+                        .setPositiveButton("Clear note") { _, _ ->
+                            settings.setString("local_note", "")
+                            toast(activity, "Saved private note cleared.")
+                        }
+                        .setNegativeButton("Cancel", null).show()
+                }
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun exportLocalBackup(activity: Activity, settings: SettingsAPI) {
+        val backup = JSONObject()
+        try {
+            backup.put("format", "hgpg-local-backup")
+            backup.put("version", 1)
+            backup.put("local_note", realString(settings.getString("local_note", "")))
+            backup.put("theme_profile", realString(settings.getString("theme_profile", "garuda")))
+            backup.put("ambient_light_enabled", settings.getBool("ambient_light_enabled", true))
+            backup.put("ambient_light_intensity", settings.getInt("ambient_light_intensity", 72).coerceIn(0, 100))
+            backup.put("launcher_enabled", settings.getBool("launcher_enabled", true))
+            backup.put("launcher_x_percent", settings.getInt("launcher_x_percent", -1))
+            backup.put("launcher_y_percent", settings.getInt("launcher_y_percent", -1))
+            val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            if (clipboard == null) {
+                toast(activity, "Clipboard service is unavailable.")
+                return
+            }
+            clipboard.setPrimaryClip(ClipData.newPlainText("HG PG local backup", backup.toString(2)))
+            toast(activity, "Local backup copied to clipboard. Keep it private.")
+        } catch (_: Throwable) {
+            toast(activity, "Could not export the local backup.")
+        }
+    }
+
+    private fun importLocalBackup(activity: Activity, settings: SettingsAPI) {
+        val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        val raw = try {
+            clipboard?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(activity)?.toString()
+        } catch (_: Throwable) {
+            null
+        }
+        if (raw.isNullOrBlank()) {
+            toast(activity, "Clipboard is empty; copy a HG PG backup JSON first.")
+            return
+        }
+
+        try {
+            val backup = JSONObject(raw)
+            if (backup.optString("format") != "hgpg-local-backup" || backup.optInt("version", -1) != 1) {
+                throw IllegalArgumentException("This is not a supported HG PG backup.")
+            }
+            val note = backup.optString("local_note", realString(settings.getString("local_note", "")))
+            if (note.length > MAX_NOTE) throw IllegalArgumentException("The backup note is longer than 1,500 characters.")
+            val themeId = backup.optString("theme_profile", realString(settings.getString("theme_profile", "garuda")))
+            if (HGPGThemes.all.none { it.id == themeId }) throw IllegalArgumentException("The backup contains an unknown theme.")
+            val intensity = backup.optInt("ambient_light_intensity", settings.getInt("ambient_light_intensity", 72))
+            if (intensity !in 0..100) throw IllegalArgumentException("Ambient Light intensity must be between 0 and 100.")
+            val x = backup.optInt("launcher_x_percent", settings.getInt("launcher_x_percent", -1))
+            val y = backup.optInt("launcher_y_percent", settings.getInt("launcher_y_percent", -1))
+            if (!(x == -1 || x in 0..10000) || !(y == -1 || y in 0..10000)) {
+                throw IllegalArgumentException("The backup contains an invalid launcher position.")
+            }
+            val ambientEnabled = backup.optBoolean("ambient_light_enabled", settings.getBool("ambient_light_enabled", true))
+            val launcherEnabled = backup.optBoolean("launcher_enabled", settings.getBool("launcher_enabled", true))
+
+            AlertDialog.Builder(activity).setTitle("Import HG PG backup?")
+                .setMessage("This will replace the saved note, theme, Ambient Light settings, and floating-button preferences on this device. Only continue if you trust the clipboard contents.")
+                .setPositiveButton("Import backup") { _, _ ->
+                    settings.setString("local_note", note)
+                    settings.setString("theme_profile", themeId)
+                    settings.setBool("ambient_light_enabled", ambientEnabled)
+                    settings.setInt("ambient_light_intensity", intensity)
+                    settings.setBool("launcher_enabled", launcherEnabled)
+                    settings.setInt("launcher_x_percent", x)
+                    settings.setInt("launcher_y_percent", y)
+
+                    val theme = HGPGThemes.get(themeId)
+                    HGPGGlobalThemeEngine.apply(theme)
+                    HGPGMotionEngine.setTheme(theme)
+                    HGPGGlobalMotionOverlay.setTheme(theme)
+                    HGPGGlobalMotionOverlay.setAmbientEnabled(ambientEnabled)
+                    HGPGGlobalMotionOverlay.setAmbientIntensity(intensity)
+                    HGPGInAppBubble.setTheme(theme)
+                    HGPGHighTechRenderer.setTheme(theme)
+                    refreshTheme(settings)
+                    if (launcherEnabled) attach(activity, settings) else setLauncherEnabled(activity, settings, false)
+                    activity.window?.decorView?.postDelayed({
+                        if (!activity.isFinishing && !activity.isDestroyed) HGPGGlobalThemeEngine.refreshActivity(activity)
+                    }, 250L)
+                    toast(activity, "HG PG backup imported.")
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        } catch (error: Throwable) {
+            val message = if (error is IllegalArgumentException) {
+                error.message ?: "The backup is invalid."
+            } else {
+                "Clipboard text is not valid HG PG backup JSON."
+            }
+            AlertDialog.Builder(activity).setTitle("Backup import failed")
+                .setMessage(message + "\n\nNo HG PG settings were changed.")
+                .setPositiveButton("Close", null).show()
+        }
     }
 
     private fun showThemes(activity: Activity, settings: SettingsAPI) {
