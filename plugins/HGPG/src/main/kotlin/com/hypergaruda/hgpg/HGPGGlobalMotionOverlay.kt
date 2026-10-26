@@ -96,18 +96,22 @@ internal object HGPGGlobalMotionOverlay {
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 isFocusable = false
                 isClickable = false
+                isLongClickable = false
                 contentDescription = null
-                elevation = 1000f * resources.displayMetrics.density
+                // Decorative animation must never sit above interactive Discord/HG PG controls.
+                elevation = 0f
+                setOnTouchListener { _, _ -> false }
             }
             overlays[root] = overlay
+            // Keep the motion layer at index 0: it draws behind all interactive child views.
             root.addView(
                 overlay,
+                0,
                 ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
             )
-            overlay.bringToFront()
         }
     }
 
