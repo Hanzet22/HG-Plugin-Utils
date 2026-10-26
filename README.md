@@ -22,6 +22,8 @@ A privacy-conscious Aliucord plugin toolkit, built with Kotlin and compiled thro
 
 ## Build
 
+The current source version is **0.2.1**. This patch fixes a crash when opening HG PG settings by calling the base `SettingsPage.onViewBound(view)` before adding any views.
+
 The `Build HG PG` GitHub Actions workflow runs on pushes to `main` and manual dispatch. It builds with JDK 21 and Gradle 9.3.1, then uploads the plugin ZIP as a workflow artifact. Open **Actions → Build HG PG → latest run → Artifacts** to download it.
 
 A successful commit is not proof of a successful build: check the workflow result before installing anything.
