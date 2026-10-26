@@ -215,7 +215,7 @@ class HGPGSettingsPage(private val pluginSettings: SettingsAPI) : SettingsPage()
         addView(container)
         container.animate().alpha(1f).translationY(0f).setDuration(280L)
             .setInterpolator(DecelerateInterpolator()).start()
-        HGPGGUIAnimations.fadeInTextTree(container, staggerMs = 12L)
+        HGPGUIAnimations.fadeInTextTree(container, staggerMs = 12L)
     }
 
     /** Read settings through CharSequence to remain compatible with Aliucord's wrapper. */
