@@ -24,7 +24,6 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 import android.view.animation.DecelerateInterpolator
 import kotlin.math.abs
 import androidx.appcompat.app.AlertDialog
@@ -165,6 +164,7 @@ internal object HGPGOverlay {
     /** Refresh existing launcher(s) immediately after a theme is selected. */
     fun refreshTheme(settings: SettingsAPI) {
         val selected = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda")))
+        HGPGInAppBubble.setTheme(selected)
         launchers.forEach { (activity, button) ->
             if (!activity.isFinishing && !activity.isDestroyed) {
                 button.background = HGPGAnimatedDrawable(selected, cornerScale = 0.5f)
@@ -272,6 +272,7 @@ internal object HGPGOverlay {
             }
         }
         current.show()
+        HGPGGUIAnimations.fadeInTextTree(root, staggerMs = 16L)
         current.window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
@@ -499,7 +500,8 @@ internal object HGPGOverlay {
         return if (clean.length > limit) clean.substring(0, limit) else clean
     }
 
-    private fun toast(activity: Activity, message: String) = Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+    private fun toast(activity: Activity, message: String) =
+        HGPGInAppBubble.show(activity, "HG PG · Notification", message)
 
     private fun accent(settings: SettingsAPI): Int = HGPGThemes.get(realString(settings.getString("theme_profile", "garuda"))).accent
 
