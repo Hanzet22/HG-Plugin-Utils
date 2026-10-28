@@ -272,8 +272,11 @@ private class HGPGGlassDrawable(
         paint.shader = null
 
         val glowRadius = maxOf(width, height) * if (style == HGPGGlassStyle.MORPH_GLASS) 0.85f else 0.63f
+        val motionPhase = (android.os.SystemClock.uptimeMillis() % 5200L).toFloat() / 5200f
+        val glowX = rect.left + width * (0.12f + 0.76f * motionPhase)
+        val glowY = rect.top + height * (0.04f + 0.12f * kotlin.math.sin(motionPhase * Math.PI * 2.0).toFloat())
         paint.shader = RadialGradient(
-            rect.left + width * 0.22f, rect.top + height * 0.04f, glowRadius,
+            glowX, glowY, glowRadius,
             intArrayOf(withAlpha(theme.accent, scaled(if (display == HGPGDisplayProfile.IPS) 28 else 48)),
                 withAlpha(theme.secondary, scaled(16)), withAlpha(theme.background, 0)),
             floatArrayOf(0f, 0.43f, 1f), Shader.TileMode.CLAMP
@@ -288,8 +291,30 @@ private class HGPGGlassDrawable(
             HGPGGlassStyle.LIQUID_GLASS -> drawLiquid(canvas, rect, radius, width, height)
             HGPGGlassStyle.THREE_D_UI -> drawThreeD(canvas, rect, radius, width, height)
         }
+        // A moving specular ribbon gives Morph/Liquid a live material response.
+        if (style != HGPGGlassStyle.THREE_D_UI) {
+            val sweepX = rect.left + width * ((motionPhase * 1.35f) % 1.25f - 0.12f)
+            val ribbon = Path().apply {
+                moveTo(sweepX, rect.top + height * 0.04f)
+                cubicTo(sweepX + width * 0.08f, rect.top + height * 0.22f,
+                    sweepX - width * 0.03f, rect.bottom - height * 0.18f,
+                    sweepX + width * 0.06f, rect.bottom - height * 0.04f)
+            }
+            paint.shader = LinearGradient(
+                sweepX - width * 0.035f, rect.top, sweepX + width * 0.035f, rect.bottom,
+                intArrayOf(0x00FFFFFF, withAlpha(Color.WHITE, scaled(if (style == HGPGGlassStyle.LIQUID_GLASS) 24 else 16)), 0x00FFFFFF),
+                null, Shader.TileMode.CLAMP
+            )
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = maxOf(1f, width * 0.025f)
+            paint.alpha = 255
+            canvas.drawPath(ribbon, paint)
+            paint.shader = null
+        }
         drawRim(canvas, rect, radius, width, height)
         canvas.restoreToCount(save)
+        // Redraw only while this drawable is attached to a visible View.
+        scheduleSelf({ invalidateSelf() }, android.os.SystemClock.uptimeMillis() + 48L)
     }
 
     private fun drawMorph(canvas: Canvas, r: RectF, radius: Float, w: Float, h: Float) {
