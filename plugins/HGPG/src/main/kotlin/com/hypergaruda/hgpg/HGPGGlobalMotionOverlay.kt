@@ -9,8 +9,6 @@ import android.graphics.Path
 import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
-import android.graphics.RenderEffect
-import android.os.Build
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
@@ -89,15 +87,16 @@ internal object HGPGGlobalMotionOverlay {
                 old.setTheme(currentTheme)
                 old.setAmbientEnabled(ambientEnabled)
                 old.setAmbientIntensity(ambientIntensity)
-                // Keep decorative rendering behind Discord's content tree.
-                // bringToFront() made the animation cover controls after activity resumes.
-                if (root.indexOfChild(old) != 0) {
+                // The previous index-0 placement let opaque Discord backgrounds hide both
+                // the motion layer and Ambient Light completely. Keep this transparent,
+                // non-interactive renderer last in drawing order so its effects remain visible.
+                if (root.indexOfChild(old) != root.childCount - 1) {
                     val params = old.layoutParams ?: ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
                     root.removeView(old)
-                    root.addView(old, 0, params)
+                    root.addView(old, params)
                 }
                 old.invalidate()
                 return
@@ -114,10 +113,10 @@ internal object HGPGGlobalMotionOverlay {
                 setOnTouchListener { _, _ -> false }
             }
             overlays[root] = overlay
-            // Keep the motion layer at index 0: it draws behind all interactive child views.
+            // Draw after the opaque app content. dispatchTouchEvent() always returns false,
+            // so taps and gestures continue to reach the underlying Discord controls.
             root.addView(
                 overlay,
-                0,
                 ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
@@ -202,14 +201,7 @@ private class HGPGMotionOverlayView(
     init {
         setWillNotDraw(false)
         setLayerType(View.LAYER_TYPE_HARDWARE, null)
-        // Subtle native motion blur applies only to this decorative layer, never Discord controls.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            try {
-                setRenderEffect(RenderEffect.createBlurEffect(1.15f * density, 1.15f * density, Shader.TileMode.CLAMP))
-            } catch (_: Throwable) {
-                // Older/vendor Android implementations may reject RenderEffect; motion remains functional.
-            }
-        }
+        // Keep the decorative layer crisp; blurring the entire canvas made edge lighting too faint.
         isClickable = false
         isFocusable = false
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
