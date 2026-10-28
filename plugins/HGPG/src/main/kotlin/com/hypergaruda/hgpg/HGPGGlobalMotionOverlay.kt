@@ -9,6 +9,8 @@ import android.graphics.Path
 import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
+import android.graphics.RenderEffect
+import android.os.Build
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
@@ -200,6 +202,14 @@ private class HGPGMotionOverlayView(
     init {
         setWillNotDraw(false)
         setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        // Subtle native motion blur applies only to this decorative layer, never Discord controls.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                setRenderEffect(RenderEffect.createBlurEffect(1.15f * density, 1.15f * density, Shader.TileMode.CLAMP))
+            } catch (_: Throwable) {
+                // Older/vendor Android implementations may reject RenderEffect; motion remains functional.
+            }
+        }
         isClickable = false
         isFocusable = false
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
