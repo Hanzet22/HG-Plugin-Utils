@@ -301,12 +301,12 @@ private class HGPGGlassDrawable(
                     sweepX + width * 0.06f, rect.bottom - height * 0.04f)
             }
             paint.shader = LinearGradient(
-                sweepX - width * 0.035f, rect.top, sweepX + width * 0.035f, rect.bottom,
-                intArrayOf(0x00FFFFFF, withAlpha(Color.WHITE, scaled(if (style == HGPGGlassStyle.LIQUID_GLASS) 24 else 16)), 0x00FFFFFF),
+                sweepX - width * 0.045f, rect.top, sweepX + width * 0.045f, rect.bottom,
+                intArrayOf(0x00FFFFFF, withAlpha(Color.WHITE, scaled(if (style == HGPGGlassStyle.LIQUID_GLASS) 72 else 52)), 0x00FFFFFF),
                 null, Shader.TileMode.CLAMP
             )
             paint.style = Paint.Style.STROKE
-            paint.strokeWidth = maxOf(1f, width * 0.025f)
+            paint.strokeWidth = maxOf(1.25f, width * 0.035f)
             paint.alpha = 255
             canvas.drawPath(ribbon, paint)
             paint.shader = null
