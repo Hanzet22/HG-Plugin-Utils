@@ -1,9 +1,14 @@
-version = "0.12.0"
+version = "0.13.0"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.13.0
+        * Added animated Morph/Liquid Glass highlights that follow the active theme palette.
+        * Added subtle Android 12+ native motion blur to the non-interactive decorative motion layer, with automatic compatibility fallback.
+        * Kept ambient edge lighting theme-driven and isolated blur from Discord controls.
+
         # 0.12.0
         * Replaced Android window blur dependency with fully HG PG-rendered Morph Glass, Liquid Glass, and 3D UI materials.
         * Fixed the animated overlay being moved above Discord controls when an activity resumed.
