@@ -2,7 +2,7 @@
 
 A privacy-conscious Aliucord utility plugin, built with Kotlin and compiled through GitHub Actions.
 
-## Current plugin version: 0.13.0 — Dynamic Glass & Motion Blur
+## Current plugin version: 0.13.1 — Dynamic Glass & Motion Blur Fixes
 
 HG PG includes six custom animated themes, three glass-inspired UI materials (**Morph Glass**, **Liquid Glass**, and **3D UI**) with moving theme-coloured highlights, four display colour tuning profiles (IPS, AMOLED, AMOLED+, and Super AMOLED), a **built-in app-wide resource color engine**, an **animated background on the native Aliucord screen root**, an **app-wide motion engine**, and a **high-tech rendering layer**. The selected theme paints a moving native `Drawable` backdrop behind the screen content; Morph Glass and Liquid Glass now animate a specular highlight across their surfaces, and Android 12+ applies subtle native blur only to the non-interactive decorative motion layer. Screen/dialog entrances replay when resumed, and press/release feedback is more pronounced. It also adds WebView load transitions, character-by-character reveals for short non-input text updates, and temporary hardware-accelerated layers. On Android 12+, supported WebViews can use a brief blur-to-sharp RenderEffect transition.
 
