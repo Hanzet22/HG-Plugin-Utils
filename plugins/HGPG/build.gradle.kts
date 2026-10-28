@@ -1,9 +1,14 @@
-version = "0.13.0"
+version = "0.13.1"
 description = "HyperGaruda Plugin toolkit for Aliucord"
 
 aliucord {
     changelog.set(
         """
+        # 0.13.1
+        * Fixed motion and Ambient Light visibility by drawing the transparent effects layer above opaque UI backgrounds.
+        * Removed full-layer blur that weakened ambient lighting and made animations harder to see.
+        * Increased Morph/Liquid Glass highlight visibility and suppressed duplicate back-to-back notifications.
+
         # 0.13.0
         * Added animated Morph/Liquid Glass highlights that follow the active theme palette.
         * Added subtle Android 12+ native motion blur to the non-interactive decorative motion layer, with automatic compatibility fallback.
