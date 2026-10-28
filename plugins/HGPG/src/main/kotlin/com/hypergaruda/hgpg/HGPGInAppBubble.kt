@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
+import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
@@ -22,6 +23,8 @@ import java.util.WeakHashMap
 internal object HGPGInAppBubble {
     private val activeBubbles = WeakHashMap<FrameLayout, WeakReference<View>>()
     @Volatile private var currentTheme = HGPGThemes.get("garuda")
+    private var lastNotificationKey: String? = null
+    private var lastNotificationAt = 0L
 
     fun start(settings: SettingsAPI) {
         currentTheme = HGPGThemes.get(readString(settings.getString("theme_profile", "garuda")))
@@ -33,6 +36,16 @@ internal object HGPGInAppBubble {
 
     fun show(activity: Activity, title: String, message: String, duration: Long = 2800L) {
         if (activity.isFinishing || activity.isDestroyed) return
+        // Several UI callbacks can report the same successful action (for example,
+        // a setting listener plus a panel refresh). Collapse identical back-to-back
+        // notifications while still allowing a deliberate repeat shortly afterwards.
+        val key = "$title\u0000$message"
+        synchronized(activeBubbles) {
+            val now = SystemClock.uptimeMillis()
+            if (key == lastNotificationKey && now - lastNotificationAt < 1100L) return
+            lastNotificationKey = key
+            lastNotificationAt = now
+        }
         val host = activity.findViewById<FrameLayout>(android.R.id.content) ?: return
         host.post {
             if (activity.isFinishing || activity.isDestroyed || !host.isAttachedToWindow) return@post
